@@ -12,24 +12,14 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
         then: function () {
-            // Explicit route model binding for Patient model
             Route::model('patient', Patient::class);
-            
-            // Explicit route binding for Predict3DId
+
             Route::bind('patient', function ($value) {
                 return Patient::where('Predict3DId', $value)->firstOrFail();
             });
         }
     )
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->trustProxies(
-            at: '*',
-            headers: Request::HEADER_X_FORWARDED_FOR
-                | Request::HEADER_X_FORWARDED_HOST
-                | Request::HEADER_X_FORWARDED_PORT
-                | Request::HEADER_X_FORWARDED_PROTO
-        );
-
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'lab_technician' => \App\Http\Middleware\LabTechnicianMiddleware::class,
@@ -37,4 +27,5 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
-    })->create();
+    })
+    ->create();
