@@ -3,8 +3,9 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use App\Models\Patient;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Route;
+use App\Models\Patient;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,6 +22,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Force HTTPS in production
+        if (app()->environment('production')) {
+            URL::forceScheme('https');
+        }
+
         // Explicit route model binding for Patient model using Predict3DId
         Route::bind('patient', function ($value) {
             return Patient::where('Predict3DId', $value)->firstOrFail();
