@@ -36,6 +36,4 @@ RUN composer install --no-dev --optimize-autoloader
 
 RUN chmod -R 775 storage bootstrap/cache
 
-RUN php artisan optimize:clear
-
 CMD php artisan serve --host=0.0.0.0 --port=${PORT:-8080}
