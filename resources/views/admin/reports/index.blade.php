@@ -141,16 +141,17 @@ $totalReports = collect($sections)->sum(function($section){
 
                                 </p>
 
-                                <a
-                                    href="#"
-                                    class="btn btn-primary btn-sm">
-
-                                    <i class="fas fa-eye me-1"></i>
-
-                                    Open Report
-
-                                </a>
-
+                                @if(!empty($report['route']))
+                                    <a href="{{ route($report['route']) }}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-eye me-1"></i>
+                                        Open Report
+                                    </a>
+                                @else
+                                    <button class="btn btn-secondary" disabled>
+                                        <i class="fas fa-clock me-1"></i>
+                                        Coming Soon
+                                    </button>
+                                @endif
                             </div>
 
                         </div>

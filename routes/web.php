@@ -7,6 +7,7 @@ use App\Http\Controllers\LabTechnicianController;
 use App\Http\Controllers\AdminCartController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\Reports\PaymentReportController;
 
 // Authentication Routes
 Route::get('/', function () {
@@ -150,6 +151,37 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Reports Field
     Route::get('/reports', [ReportController::class, 'index'])
         ->name('reports.index');
+
+    Route::prefix('reports')
+    ->name('reports.')
+    ->group(function () {
+
+        Route::prefix('payment')
+            ->name('payment.')
+            ->group(function () {
+
+                // Payment Report
+                Route::get(
+                    '/',
+                    [PaymentReportController::class, 'index']
+                )->name('index');
+
+                // Excel Export
+                Route::get(
+                    '/export/excel',
+                    [PaymentReportController::class, 'exportExcel']
+                )->name('export.excel');
+
+                // PDF Export
+                Route::get(
+                    '/export/pdf',
+                    [PaymentReportController::class, 'exportPdf']
+                )->name('export.pdf');
+
+            });
+
+    });
+
 });
 
 // Lab Technician Routes

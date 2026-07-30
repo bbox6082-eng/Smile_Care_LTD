@@ -12,7 +12,8 @@ return [
                     [
                         'icon'=>'fa-money-bill-wave',
                         'title'=>'Payment Report',
-                        'desc'=>'View all payment transactions.'
+                        'desc'=>'View all payment transactions.',
+                        'route' => 'admin.reports.payment.index',
                     ],
 
                     [

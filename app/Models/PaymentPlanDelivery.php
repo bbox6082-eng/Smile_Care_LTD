@@ -24,5 +24,13 @@ class PaymentPlanDelivery extends Model
         'paid_amount' => 'decimal:2',
         'delivery_date' => 'date',
     ];
+
+    public function paymentPlan()
+    {
+        return $this->belongsTo(
+            PaymentPlan::class,
+            'payment_plan_id'
+        );
+    }
 }
 
