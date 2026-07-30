@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User;
 
 class PaymentPlanPayment extends Model
 {
@@ -37,6 +38,12 @@ class PaymentPlanPayment extends Model
             PaymentPlan::class,
             'payment_plan_id'
         );
+    }
+    
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
 }

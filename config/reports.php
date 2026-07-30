@@ -26,7 +26,8 @@ return [
                     [
                         'icon'=>'fa-chart-line',
                         'title'=>'Collection Report',
-                        'desc'=>'Daily, monthly & yearly collections.'
+                        'desc'=>'Daily, monthly & yearly collections.',
+                        'route' => 'admin.reports.collection.index',
                     ],
 
                     [

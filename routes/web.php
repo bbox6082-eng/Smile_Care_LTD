@@ -9,6 +9,7 @@ use App\Http\Controllers\BankController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\Reports\PaymentReportController;
 use App\Http\Controllers\Reports\DueReportController;
+use App\Http\Controllers\Reports\CollectionReportController;
 
 // Authentication Routes
 Route::get('/', function () {
@@ -213,7 +214,30 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
             });
 
-    });
+            /*
+            |--------------------------------------------------------------------------
+            | Collection Report
+            |--------------------------------------------------------------------------
+            */
+
+            Route::prefix('collection')
+            ->name('collection.')
+            ->group(function () {
+
+                Route::get('/', [CollectionReportController::class, 'index'])
+                    ->name('index');
+
+                Route::get('/export/excel', [CollectionReportController::class, 'exportExcel'])
+                    ->name('export.excel');
+
+                Route::get('/export/pdf', [CollectionReportController::class, 'exportPdf'])
+                    ->name('export.pdf');
+
+                Route::get('/{id}', [CollectionReportController::class, 'show'])
+                    ->name('show');
+            });
+
+            });
     
 
 });
