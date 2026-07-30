@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LabTechnicianController;
 use App\Http\Controllers\AdminCartController;
 use App\Http\Controllers\BankController;
+use App\Http\Controllers\ReportController;
 
 // Authentication Routes
 Route::get('/', function () {
@@ -145,6 +146,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     Route::get('/banks/{bank}/branches', [BankController::class, 'branches'])
         ->name('banks.branches');
+
+    // Reports Field
+    Route::get('/reports', [ReportController::class, 'index'])
+        ->name('reports.index');
 });
 
 // Lab Technician Routes

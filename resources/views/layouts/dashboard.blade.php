@@ -211,6 +211,17 @@
                     <i class="fas fa-industry me-2"></i> Production Field
                 </a>
             </li>
+
+            <li class="nav-item">
+                <a href="{{ route('admin.reports.index') }}"
+                class="nav-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
+
+                    <i class="fas fa-chart-bar"></i>
+
+                    <span>Reports</span>
+
+                </a>
+            </li>
         @else
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('lab.dashboard') ? 'active' : '' }}" href="{{ route('lab.dashboard') }}">
@@ -258,6 +269,10 @@
                 </li>
             @endif
         </ul>
+        </div>
+
+        <div>
+            
         </div>
 
         <div class="sidebar-footer">
