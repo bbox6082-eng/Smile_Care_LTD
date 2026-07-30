@@ -178,6 +178,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
                     [PaymentReportController::class, 'exportPdf']
                 )->name('export.pdf');
 
+                //View
+                Route::get(
+                    '/{paymentPlan}',
+                    [PaymentReportController::class, 'show']
+                )->name('show');
+
             });
 
     });

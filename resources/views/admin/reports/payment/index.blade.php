@@ -578,12 +578,11 @@
 
                     <td class="text-center">
 
-                        <button
-                            class="btn btn-sm btn-outline-primary">
-
-                            <i class="fas fa-eye"></i>
-
-                        </button>
+                        <a href="{{ route('admin.reports.payment.show', $payment->id) }}"
+   class="btn btn-sm btn-info"
+   title="View Details">
+    <i class="fas fa-eye"></i>
+</a>
 
                     </td>
 

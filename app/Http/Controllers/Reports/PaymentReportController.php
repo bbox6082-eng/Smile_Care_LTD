@@ -52,6 +52,19 @@ class PaymentReportController extends Controller
 
         return $pdf->download($fileName);
     }
+
+    /**
+     * View Details
+     */
+        public function show($id)
+    {
+        $payment = $this->service->getDetails($id);
+
+        return view(
+            'admin.reports.payment.show',
+            compact('payment')
+        );
+    }
         /**
      * Display Payment Report
      */

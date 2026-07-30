@@ -295,4 +295,32 @@ class PaymentReportService
 
         ];
     }
+
+    /**
+     * Get Payment Report Details
+     */
+    public function getDetails($id)
+    {
+        $payment = PaymentPlan::with([
+            'patient:Predict3DId,FullName,DoctorName',
+            'payments',
+            'deliveries',
+        ])->findOrFail($id);
+
+        $totalPaid = $payment->payments->sum('amount');
+
+        $completion = 0;
+
+        if ($payment->total_amount > 0) {
+            $completion = round(
+                ($totalPaid / $payment->total_amount) * 100,
+                2
+            );
+        }
+
+        $payment->total_paid = $totalPaid;
+        $payment->completion = $completion;
+
+        return $payment;
+    }
 }
