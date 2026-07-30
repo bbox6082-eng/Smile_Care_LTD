@@ -192,6 +192,7 @@ class CollectionReportService
     public function getCollectionTrendChart(Builder $query): array
     {
         return (clone $query)
+            ->reorder()
             ->selectRaw('DATE(payment_date) as report_date')
             ->selectRaw('SUM(amount) as total_collection')
             ->groupBy('report_date')
@@ -221,6 +222,7 @@ class CollectionReportService
     public function getMonthlyCollectionChart(Builder $query): array
     {
         return (clone $query)
+            ->reorder()
             ->selectRaw('YEAR(payment_date) as year')
             ->selectRaw('MONTH(payment_date) as month')
             ->selectRaw('SUM(amount) as total_collection')
@@ -252,6 +254,7 @@ class CollectionReportService
     public function getPaymentMethodChart(Builder $query): array
     {
         return (clone $query)
+            ->reorder()
             ->select(
                 'payment_method',
                 DB::raw('SUM(amount) as total_amount')

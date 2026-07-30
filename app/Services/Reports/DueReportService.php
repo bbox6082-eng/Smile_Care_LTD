@@ -190,6 +190,7 @@ class DueReportService
     public function getDueTrendChart(Builder $query): array
     {
         $rows = $query
+            ->reorder()
             ->selectRaw('DATE(created_at) as report_date')
             ->selectRaw('SUM(remaining_amount) as total_due')
             ->groupBy('report_date')
