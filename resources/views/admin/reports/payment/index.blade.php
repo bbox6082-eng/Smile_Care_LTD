@@ -16,46 +16,48 @@
 
             <div class="d-flex justify-content-between align-items-center flex-wrap">
 
-                <div>
+                    <div>
 
-                    <h2 class="fw-bold mb-1">
-                        <i class="fas fa-money-check-dollar me-2 text-success"></i>
-                        Payment Report
-                    </h2>
-
-                    <p class="text-muted mb-0">
-                        Monitor payment plans, collections, dues and financial transactions.
-                    </p>
-
-                </div>
-
-                <div class="mt-3 mt-md-0">
-
-                    <nav aria-label="breadcrumb">
-
-                        <ol class="breadcrumb mb-0">
-
-                            <li class="breadcrumb-item">
-                                <a href="{{ route('admin.dashboard') }}">
-                                    Dashboard
-                                </a>
-                            </li>
-
-                            <li class="breadcrumb-item">
-                                <a href="{{ route('admin.reports.index') }}">
-                                    Reports
-                                </a>
-                            </li>
-
-                            <li class="breadcrumb-item active">
+                            <h2 class="fw-bold mb-1">
+                                <i class="fas fa-money-check-dollar me-2 text-success"></i>
                                 Payment Report
-                            </li>
+                            </h2>
 
-                        </ol>
+                            <p class="text-muted mb-0">
+                                Monitor payment plans, collections, dues and financial transactions.
+                            </p>
 
-                    </nav>
+                        </div>
 
-                </div>
+                    <div class="mt-3 mt-md-0 d-flex gap-2 justify-content-md-end">
+
+            <a href="{{ route('admin.dashboard') }}"
+            class="btn btn-light border shadow-sm">
+
+                <i class="fas fa-home me-1"></i>
+
+                Dashboard
+
+            </a>
+
+            <a href="{{ route('admin.reports.index') }}"
+            class="btn btn-light border shadow-sm">
+
+                <i class="fas fa-chart-bar me-1"></i>
+
+                Reports
+
+            </a>
+
+            <span class="btn btn-primary shadow-sm disabled">
+
+                <i class="fas fa-file-invoice-dollar me-1"></i>
+
+                Payment Report
+
+            </span>
+
+        </div>
 
             </div>
 

@@ -19,7 +19,8 @@ return [
                     [
                         'icon'=>'fa-hand-holding-usd',
                         'title'=>'Due Report',
-                        'desc'=>'Outstanding payment report.'
+                        'desc'=>'Outstanding payment report.',
+                        'route' => 'admin.reports.due.index',
                     ],
 
                     [

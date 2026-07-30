@@ -8,6 +8,7 @@ use App\Http\Controllers\AdminCartController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\Reports\PaymentReportController;
+use App\Http\Controllers\Reports\DueReportController;
 
 // Authentication Routes
 Route::get('/', function () {
@@ -178,7 +179,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
                     [PaymentReportController::class, 'exportPdf']
                 )->name('export.pdf');
 
-                //View
+                //View Details
                 Route::get(
                     '/{paymentPlan}',
                     [PaymentReportController::class, 'show']
@@ -186,7 +187,34 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
             });
 
+            Route::prefix('due')
+            ->name('due.')
+            ->group(function () {
+
+                Route::get(
+                    '/',
+                    [DueReportController::class, 'index']
+                )->name('index');
+
+                Route::get(
+                    '/export/excel',
+                    [DueReportController::class, 'exportExcel']
+                )->name('export.excel');
+
+                Route::get(
+                    '/export/pdf',
+                    [DueReportController::class, 'exportPdf']
+                )->name('export.pdf');
+
+                Route::get(
+                    '/{paymentPlan}',
+                    [DueReportController::class, 'show']
+                )->name('show');
+
+            });
+
     });
+    
 
 });
 
