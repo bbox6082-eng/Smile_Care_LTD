@@ -10,6 +10,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\Reports\PaymentReportController;
 use App\Http\Controllers\Reports\DueReportController;
 use App\Http\Controllers\Reports\CollectionReportController;
+use App\Http\Controllers\Reports\PaymentMethodReportController;
 
 // Authentication Routes
 Route::get('/', function () {
@@ -238,6 +239,39 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             });
 
             });
+
+               /*
+        |--------------------------------------------------------------------------
+        | Payment Method Report
+        |--------------------------------------------------------------------------
+        */
+
+        Route::prefix('reports/payment-method')
+            ->name('reports.payment-method.')
+            ->group(function () {
+
+                Route::get(
+                    '/',
+                    [PaymentMethodReportController::class, 'index']
+                )->name('index');
+
+                Route::get(
+                    '/{id}',
+                    [PaymentMethodReportController::class, 'show']
+                )->name('show');
+
+                Route::get(
+                    '/export/excel',
+                    [PaymentMethodReportController::class, 'exportExcel']
+                )->name('export.excel');
+
+                Route::get(
+                    '/export/pdf',
+                    [PaymentMethodReportController::class, 'exportPdf']
+                )->name('export.pdf');
+
+            });
+
     
 
 });

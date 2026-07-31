@@ -52,10 +52,6 @@
 
   let currentPredict = '';
 
-  function redirectToPatientList() {
-    window.location.href = "{{ route('admin.patients.index') }}";
-  }
-
   function selectedMethod(){
     for(const r of $pmRadios){ if(r.checked) return r.value; }
     return 'cash';
@@ -245,7 +241,6 @@
       $sumPaid.textContent = paidNow2.toFixed(2);
       $sumRemaining.textContent = Math.max(0, parseFloat(plan.total_amount||0) - paidNow2).toFixed(2);
       alert('Saved successfully');
-      redirectToPatientList();
     }catch(e){ alert(e.message||'Error saving'); }
   });
 
@@ -279,7 +274,6 @@
       $sumPaid.textContent = paidNow3.toFixed(2);
       $sumRemaining.textContent = Math.max(0, parseFloat(plan.total_amount||0) - paidNow3).toFixed(2);
       alert('Saved successfully');
-      redirectToPatientList();
     }catch(e){ alert(e.message||'Error saving'); }
   });
 

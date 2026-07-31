@@ -33,7 +33,8 @@ return [
                     [
                         'icon'=>'fa-university',
                         'title'=>'Payment Method',
-                        'desc'=>'Cash, Card, Bank & Mobile Banking.'
+                        'desc'=>'Cash, Card, Bank & Mobile Banking.',
+                        'route' => 'admin.reports.payment-method.index',
                     ],
 
                 ]
