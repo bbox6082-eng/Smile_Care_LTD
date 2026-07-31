@@ -6,48 +6,72 @@
 
 <div class="container-fluid">
 
-    {{-- ==========================================
-        Page Header
-    =========================================== --}}
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    {{-- ==========================================================
+    PAGE HEADER
+========================================================== --}}
 
-        <div>
+<div class="card border-0 shadow-sm mb-4">
 
-            <h2 class="fw-bold mb-1">
-                Payment Method Report
-            </h2>
+    <div class="card-body">
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+
+            <div>
+
+                <h2 class="fw-bold mb-1">
+
+                    <i class="fas fa-credit-card me-2 text-primary"></i>
+
+                    Payment Method Report
+
+                </h2>
+
+                
+
+            </div>
+
+            <div class="mt-3 mt-md-0 d-flex gap-2 justify-content-md-end">
+
+                <a href="{{ route('admin.dashboard') }}"
+                   class="btn btn-light border shadow-sm">
+
+                    <i class="fas fa-home me-1"></i>
+
+                    Dashboard
+
+                </a>
+
+                <a href="{{ route('admin.reports.index') }}"
+                   class="btn btn-light border shadow-sm">
+
+                    <i class="fas fa-chart-bar me-1"></i>
+
+                    Reports
+
+                </a>
+
+                <span class="btn btn-primary shadow-sm disabled">
+
+                    <i class="fas fa-credit-card me-1"></i>
+
+                    Payment Method Report
+
+                </span>
+
+            </div>
 
             <p class="text-muted mb-0">
-                Analyze transactions by payment method, bank, mobile banking provider and date.
+
+                    Monitor payment methods, transaction history, bank transfers,
+                    mobile banking activities and payment channel performance.
+
             </p>
-
-        </div>
-
-        <div>
-
-            <a href="{{ route('admin.reports.payment-method.export.excel', request()->query()) }}"
-               class="btn btn-success">
-
-                <i class="fas fa-file-excel me-1"></i>
-
-                Export Excel
-
-            </a>
-
-            <a href="{{ route('admin.reports.payment-method.export.pdf', request()->query()) }}"
-               class="btn btn-danger">
-
-                <i class="fas fa-file-pdf me-1"></i>
-
-                Export PDF
-
-            </a>
 
         </div>
 
     </div>
 
-
+</div>
     {{-- ==========================================
         Summary Cards
     =========================================== --}}
@@ -369,6 +393,51 @@
                         </a>
 
                     </div>
+
+                   <div class="row mt-3">
+
+                    <div class="col-md-6 d-flex align-items-end">
+
+                        <button class="btn btn-primary me-2">
+
+                            <i class="fas fa-search me-1"></i>
+
+                            Filter
+
+                        </button>
+
+                        <a href="{{ route('admin.reports.payment-method.index') }}"
+                        class="btn btn-secondary">
+
+                            Reset
+
+                        </a>
+
+                    </div>
+
+                    <div class="col-md-6 d-flex justify-content-md-end align-items-end mt-3 mt-md-0">
+
+                        <a href="{{ route('admin.reports.payment-method.export.excel', request()->query()) }}"
+                        class="btn btn-success me-2">
+
+                            <i class="fas fa-file-excel me-1"></i>
+
+                            Export Excel
+
+                        </a>
+
+                        <a href="{{ route('admin.reports.payment-method.export.pdf', request()->query()) }}"
+                        class="btn btn-danger">
+
+                            <i class="fas fa-file-pdf me-1"></i>
+
+                            Export PDF
+
+                        </a>
+
+                    </div>
+
+                </div>
 
                 </div>
 
