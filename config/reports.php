@@ -52,13 +52,15 @@ return [
                     [
                         'icon'=>'fa-user-injured',
                         'title'=>'Patient Report',
-                        'desc'=>'Complete patient information.'
+                        'desc'=>'Complete patient information.',
+                        'route' => 'admin.reports.patient.index',
                     ],
 
                     [
                         'icon'=>'fa-user-check',
                         'title'=>'Active Patients',
-                        'desc'=>'Currently active patients.'
+                        'desc'=>'Currently active patients.',
+                        'route' => 'admin.reports.active-patients.index',
                     ],
 
                     [

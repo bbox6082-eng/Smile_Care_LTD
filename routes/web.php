@@ -11,6 +11,8 @@ use App\Http\Controllers\Reports\PaymentReportController;
 use App\Http\Controllers\Reports\DueReportController;
 use App\Http\Controllers\Reports\CollectionReportController;
 use App\Http\Controllers\Reports\PaymentMethodReportController;
+use App\Http\Controllers\Reports\PatientReportController;
+use App\Http\Controllers\Reports\ActivePatientReportController;
 
 // Authentication Routes
 Route::get('/', function () {
@@ -152,127 +154,218 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         ->name('banks.branches');
 
     // Reports Field
-    Route::get('/reports', [ReportController::class, 'index'])
-        ->name('reports.index');
+Route::get('/reports', [ReportController::class, 'index'])
+    ->name('reports.index');
 
-    Route::prefix('reports')
+
+/*
+|--------------------------------------------------------------------------
+| Reports
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('reports')
     ->name('reports.')
     ->group(function () {
 
-        Route::prefix('payment')
-            ->name('payment.')
-            ->group(function () {
 
-                // Payment Report
-                Route::get(
-                    '/',
-                    [PaymentReportController::class, 'index']
-                )->name('index');
+    /*
+    |--------------------------------------------------------------------------
+    | Payment Report
+    |--------------------------------------------------------------------------
+    */
 
-                // Excel Export
-                Route::get(
-                    '/export/excel',
-                    [PaymentReportController::class, 'exportExcel']
-                )->name('export.excel');
+    Route::prefix('payment')
+        ->name('payment.')
+        ->group(function () {
 
-                // PDF Export
-                Route::get(
-                    '/export/pdf',
-                    [PaymentReportController::class, 'exportPdf']
-                )->name('export.pdf');
+            Route::get(
+                '/',
+                [PaymentReportController::class, 'index']
+            )->name('index');
 
-                //View Details
-                Route::get(
-                    '/{paymentPlan}',
-                    [PaymentReportController::class, 'show']
-                )->name('show');
+            Route::get(
+                '/export/excel',
+                [PaymentReportController::class, 'exportExcel']
+            )->name('export.excel');
 
-            });
+            Route::get(
+                '/export/pdf',
+                [PaymentReportController::class, 'exportPdf']
+            )->name('export.pdf');
 
-            Route::prefix('due')
-            ->name('due.')
-            ->group(function () {
+            Route::get(
+                '/{paymentPlan}',
+                [PaymentReportController::class, 'show']
+            )->name('show');
 
-                Route::get(
-                    '/',
-                    [DueReportController::class, 'index']
-                )->name('index');
+        });
 
-                Route::get(
-                    '/export/excel',
-                    [DueReportController::class, 'exportExcel']
-                )->name('export.excel');
 
-                Route::get(
-                    '/export/pdf',
-                    [DueReportController::class, 'exportPdf']
-                )->name('export.pdf');
+    /*
+    |--------------------------------------------------------------------------
+    | Due Report
+    |--------------------------------------------------------------------------
+    */
 
-                Route::get(
-                    '/{paymentPlan}',
-                    [DueReportController::class, 'show']
-                )->name('show');
+    Route::prefix('due')
+        ->name('due.')
+        ->group(function () {
 
-            });
+            Route::get(
+                '/',
+                [DueReportController::class, 'index']
+            )->name('index');
 
-            /*
-            |--------------------------------------------------------------------------
-            | Collection Report
-            |--------------------------------------------------------------------------
-            */
+            Route::get(
+                '/export/excel',
+                [DueReportController::class, 'exportExcel']
+            )->name('export.excel');
 
-            Route::prefix('collection')
-            ->name('collection.')
-            ->group(function () {
+            Route::get(
+                '/export/pdf',
+                [DueReportController::class, 'exportPdf']
+            )->name('export.pdf');
 
-                Route::get('/', [CollectionReportController::class, 'index'])
-                    ->name('index');
+            Route::get(
+                '/{paymentPlan}',
+                [DueReportController::class, 'show']
+            )->name('show');
 
-                Route::get('/export/excel', [CollectionReportController::class, 'exportExcel'])
-                    ->name('export.excel');
+        });
 
-                Route::get('/export/pdf', [CollectionReportController::class, 'exportPdf'])
-                    ->name('export.pdf');
 
-                Route::get('/{id}', [CollectionReportController::class, 'show'])
-                    ->name('show');
-            });
+    /*
+    |--------------------------------------------------------------------------
+    | Collection Report
+    |--------------------------------------------------------------------------
+    */
 
-            });
+    Route::prefix('collection')
+        ->name('collection.')
+        ->group(function () {
 
-               /*
-        |--------------------------------------------------------------------------
-        | Payment Method Report
-        |--------------------------------------------------------------------------
-        */
+            Route::get(
+                '/',
+                [CollectionReportController::class, 'index']
+            )->name('index');
 
-        Route::prefix('reports/payment-method')
-            ->name('reports.payment-method.')
-            ->group(function () {
+            Route::get(
+                '/export/excel',
+                [CollectionReportController::class, 'exportExcel']
+            )->name('export.excel');
 
-                Route::get(
-                    '/',
-                    [PaymentMethodReportController::class, 'index']
-                )->name('index');
+            Route::get(
+                '/export/pdf',
+                [CollectionReportController::class, 'exportPdf']
+            )->name('export.pdf');
 
-                Route::get(
-                    '/{id}',
-                    [PaymentMethodReportController::class, 'show']
-                )->name('show');
+            Route::get(
+                '/{id}',
+                [CollectionReportController::class, 'show']
+            )->name('show');
 
-                Route::get(
-                    '/export/excel',
-                    [PaymentMethodReportController::class, 'exportExcel']
-                )->name('export.excel');
+        });
 
-                Route::get(
-                    '/export/pdf',
-                    [PaymentMethodReportController::class, 'exportPdf']
-                )->name('export.pdf');
 
-            });
+    /*
+    |--------------------------------------------------------------------------
+    | Payment Method Report
+    |--------------------------------------------------------------------------
+    */
 
-    
+    Route::prefix('payment-method')
+        ->name('payment-method.')
+        ->group(function () {
+
+            Route::get(
+                '/',
+                [PaymentMethodReportController::class, 'index']
+            )->name('index');
+
+            Route::get(
+                '/export/excel',
+                [PaymentMethodReportController::class, 'exportExcel']
+            )->name('export.excel');
+
+            Route::get(
+                '/export/pdf',
+                [PaymentMethodReportController::class, 'exportPdf']
+            )->name('export.pdf');
+
+            Route::get(
+                '/{id}',
+                [PaymentMethodReportController::class, 'show']
+            )->name('show');
+
+        });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Patient Report
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('patient')
+        ->name('patient.')
+        ->group(function () {
+
+            Route::get(
+                '/',
+                [PatientReportController::class, 'index']
+            )->name('index');
+
+            Route::get(
+                '/export/excel',
+                [PatientReportController::class, 'exportExcel']
+            )->name('export.excel');
+
+            Route::get(
+                '/export/pdf',
+                [PatientReportController::class, 'exportPdf']
+            )->name('export.pdf');
+
+            Route::get(
+                '/{predict3dId}',
+                [PatientReportController::class, 'show']
+            )->name('show');
+
+        });
+
+        /*
+|--------------------------------------------------------------------------
+| Active Patients Report
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('active-patients')
+    ->name('active-patients.')
+    ->group(function () {
+
+        Route::get(
+            '/',
+            [ActivePatientReportController::class, 'index']
+        )->name('index');
+
+        Route::get(
+            '/export/excel',
+            [ActivePatientReportController::class, 'exportExcel']
+        )->name('export.excel');
+
+        Route::get(
+            '/export/pdf',
+            [ActivePatientReportController::class, 'exportPdf']
+        )->name('export.pdf');
+
+        Route::get(
+            '/{predict3dId}',
+            [ActivePatientReportController::class, 'show']
+        )->name('show');
+
+    });
+
+});
 
 });
 
