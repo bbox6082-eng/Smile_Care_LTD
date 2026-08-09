@@ -20,6 +20,10 @@ use App\Http\Controllers\Reports\CompletedCaseReportController;
 use App\Http\Controllers\Reports\PaymentDueReportController;
 use App\Http\Controllers\Reports\DeliveryPendingReportController;
 use App\Http\Controllers\Reports\DeliveryOverdueReportController;
+use App\Http\Controllers\Reports\DoctorWisePatientsReportController;
+use App\Http\Controllers\Reports\DoctorRevenueReportController;
+use App\Http\Controllers\Reports\MrWisePatientsReportController;
+use App\Http\Controllers\Reports\MrPerformanceReportController;
 
 // Authentication Routes
 Route::get('/', function () {
@@ -595,6 +599,169 @@ Route::prefix('delivery-overdue')
         )->name('show');
 
     });
+
+    /*
+|--------------------------------------------------------------------------
+| Doctor-wise Patients Report
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('doctor-wise-patients')
+    ->name('doctor-wise-patients.')
+    ->group(function () {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Main Report
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/',
+            [DoctorWisePatientsReportController::class, 'index']
+        )->name('index');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Excel Export
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/export/excel',
+            [DoctorWisePatientsReportController::class, 'exportExcel']
+        )->name('export.excel');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PDF Export
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/export/pdf',
+            [DoctorWisePatientsReportController::class, 'exportPdf']
+        )->name('export.pdf');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Doctor Details
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/doctor/{doctor}',
+            [DoctorWisePatientsReportController::class, 'show']
+        )->name('show');
+
+    });
+
+    /*
+|--------------------------------------------------------------------------
+| Doctor Revenue Report
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('doctor-revenue')
+    ->name('doctor-revenue.')
+    ->group(function () {
+
+        Route::get(
+            '/',
+            [DoctorRevenueReportController::class, 'index']
+        )->name('index');
+
+        Route::get(
+            '/export/excel',
+            [DoctorRevenueReportController::class, 'exportExcel']
+        )->name('export.excel');
+
+        Route::get(
+            '/export/pdf',
+            [DoctorRevenueReportController::class, 'exportPdf']
+        )->name('export.pdf');
+
+        Route::get(
+            '/{doctor}',
+            [DoctorRevenueReportController::class, 'show']
+        )->name('show');
+
+    });
+    
+            /*
+        |--------------------------------------------------------------------------
+        | MR-wise Patients Report
+        |--------------------------------------------------------------------------
+        */
+
+        Route::prefix('mr-wise-patients')
+            ->name('mr-wise-patients.')
+            ->group(function () {
+
+                // Main Report
+                Route::get(
+                    '/',
+                    [MrWisePatientsReportController::class, 'index']
+                )->name('index');
+
+                // Excel Export
+                Route::get(
+                    '/export/excel',
+                    [MrWisePatientsReportController::class, 'exportExcel']
+                )->name('export.excel');
+
+                // PDF Export
+                Route::get(
+                    '/export/pdf',
+                    [MrWisePatientsReportController::class, 'exportPdf']
+                )->name('export.pdf');
+
+                // MR Details
+                Route::get(
+                    '/{mr}',
+                    [MrWisePatientsReportController::class, 'show']
+                )->name('show');
+            });
+
+           /*
+|--------------------------------------------------------------------------
+| MR Performance Report
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('mr-performance')
+    ->name('mr-performance.')
+    ->group(function () {
+
+        // Main Report
+        Route::get(
+            '/',
+            [MrPerformanceReportController::class, 'index']
+        )->name('index');
+
+        // Excel Export
+        Route::get(
+            '/export/excel',
+            [MrPerformanceReportController::class, 'exportExcel']
+        )->name('export.excel');
+
+        // PDF Export
+        Route::get(
+            '/export/pdf',
+            [MrPerformanceReportController::class, 'exportPdf']
+        )->name('export.pdf');
+
+        // Individual MR Performance
+        Route::get(
+            '/{mr}',
+            [MrPerformanceReportController::class, 'show']
+        )->name('show');
+
+    });
+
 
 });
 

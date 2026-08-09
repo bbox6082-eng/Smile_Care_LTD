@@ -141,13 +141,15 @@ return [
                     [
                         'icon'=>'fa-user-doctor',
                         'title'=>'Doctor-wise Patients',
-                        'desc'=>'Patients grouped by doctor.'
+                        'desc'=>'Patients grouped by doctor.',
+                        'route' => 'admin.reports.doctor-wise-patients.index',
                     ],
 
                     [
                         'icon'=>'fa-coins',
                         'title'=>'Doctor Revenue',
-                        'desc'=>'Doctor revenue summary.'
+                        'desc'=>'Doctor revenue summary.',
+                        'route' => 'admin.reports.doctor-revenue.index',
                     ],
 
                 ]
@@ -165,13 +167,15 @@ return [
                     [
                         'icon'=>'fa-users',
                         'title'=>'MR-wise Patients',
-                        'desc'=>'Patients grouped by MR.'
+                        'desc'=>'Patients grouped by MR.',
+                        'route' => 'admin.reports.mr-wise-patients.index',
                     ],
 
                     [
                         'icon'=>'fa-chart-pie',
                         'title'=>'MR Performance',
-                        'desc'=>'Marketing performance report.'
+                        'desc'=>'Marketing performance report.',
+                        'route' => 'admin.reports.mr-performance.index',
                     ],
 
                 ]
