@@ -13,6 +13,13 @@ use App\Http\Controllers\Reports\CollectionReportController;
 use App\Http\Controllers\Reports\PaymentMethodReportController;
 use App\Http\Controllers\Reports\PatientReportController;
 use App\Http\Controllers\Reports\ActivePatientReportController;
+use App\Http\Controllers\Reports\InactivePatientReportController;
+use App\Http\Controllers\Reports\PatientByDoctorReportController;
+use App\Http\Controllers\Reports\ActiveCaseReportController;
+use App\Http\Controllers\Reports\CompletedCaseReportController;
+use App\Http\Controllers\Reports\PaymentDueReportController;
+use App\Http\Controllers\Reports\DeliveryPendingReportController;
+use App\Http\Controllers\Reports\DeliveryOverdueReportController;
 
 // Authentication Routes
 Route::get('/', function () {
@@ -361,6 +368,230 @@ Route::prefix('active-patients')
         Route::get(
             '/{predict3dId}',
             [ActivePatientReportController::class, 'show']
+        )->name('show');
+
+    });
+
+    /*
+|--------------------------------------------------------------------------
+| Inactive Patients Report
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('inactive-patients')
+    ->name('inactive-patients.')
+    ->group(function () {
+
+        Route::get(
+            '/',
+            [InactivePatientReportController::class, 'index']
+        )->name('index');
+
+        Route::get(
+            '/export/excel',
+            [InactivePatientReportController::class, 'exportExcel']
+        )->name('export.excel');
+
+        Route::get(
+            '/export/pdf',
+            [InactivePatientReportController::class, 'exportPdf']
+        )->name('export.pdf');
+
+        Route::get(
+            '/{predict3dId}',
+            [InactivePatientReportController::class, 'show']
+        )->name('show');
+
+    });
+
+    /*
+|--------------------------------------------------------------------------
+| Patient by Doctor Report
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('patient-by-doctor')
+    ->name('patient-by-doctor.')
+    ->group(function () {
+
+        Route::get(
+            '/',
+            [PatientByDoctorReportController::class, 'index']
+        )->name('index');
+
+        Route::get(
+            '/export/excel',
+            [PatientByDoctorReportController::class, 'exportExcel']
+        )->name('export.excel');
+
+        Route::get(
+            '/export/pdf',
+            [PatientByDoctorReportController::class, 'exportPdf']
+        )->name('export.pdf');
+
+        Route::get(
+            '/{predict3dId}',
+            [PatientByDoctorReportController::class, 'show']
+        )->name('show');
+
+    });
+
+    /*
+|--------------------------------------------------------------------------
+| Active Cases Report
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('active-cases')
+    ->name('active-cases.')
+    ->group(function () {
+
+        Route::get(
+            '/',
+            [ActiveCaseReportController::class, 'index']
+        )->name('index');
+
+        Route::get(
+            '/export/excel',
+            [ActiveCaseReportController::class, 'exportExcel']
+        )->name('export.excel');
+
+        Route::get(
+            '/export/pdf',
+            [ActiveCaseReportController::class, 'exportPdf']
+        )->name('export.pdf');
+
+        Route::get(
+            '/{id}',
+            [ActiveCaseReportController::class, 'show']
+        )->name('show');
+
+    });
+
+    /*
+|--------------------------------------------------------------------------
+| Completed Cases Report
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('completed-cases')
+    ->name('completed-cases.')
+    ->group(function () {
+
+        Route::get(
+            '/',
+            [CompletedCaseReportController::class, 'index']
+        )->name('index');
+
+        Route::get(
+            '/export/excel',
+            [CompletedCaseReportController::class, 'exportExcel']
+        )->name('export.excel');
+
+        Route::get(
+            '/export/pdf',
+            [CompletedCaseReportController::class, 'exportPdf']
+        )->name('export.pdf');
+
+        Route::get(
+            '/{id}',
+            [CompletedCaseReportController::class, 'show']
+        )->name('show');
+
+    });
+
+    /*
+|--------------------------------------------------------------------------
+| Payment Due Report
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('payment-due')
+    ->name('payment-due.')
+    ->group(function () {
+
+        Route::get(
+            '/',
+            [PaymentDueReportController::class, 'index']
+        )->name('index');
+
+        Route::get(
+            '/export/excel',
+            [PaymentDueReportController::class, 'exportExcel']
+        )->name('export.excel');
+
+        Route::get(
+            '/export/pdf',
+            [PaymentDueReportController::class, 'exportPdf']
+        )->name('export.pdf');
+
+        Route::get(
+            '/{id}',
+            [PaymentDueReportController::class, 'show']
+        )->name('show');
+
+    });
+
+    /*
+|--------------------------------------------------------------------------
+| Delivery Pending Report
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('delivery-pending')
+    ->name('delivery-pending.')
+    ->group(function () {
+
+        Route::get(
+            '/',
+            [DeliveryPendingReportController::class, 'index']
+        )->name('index');
+
+        Route::get(
+            '/export/excel',
+            [DeliveryPendingReportController::class, 'exportExcel']
+        )->name('export.excel');
+
+        Route::get(
+            '/export/pdf',
+            [DeliveryPendingReportController::class, 'exportPdf']
+        )->name('export.pdf');
+
+        Route::get(
+            '/{id}',
+            [DeliveryPendingReportController::class, 'show']
+        )->name('show');
+
+    });
+
+    /*
+|--------------------------------------------------------------------------
+| Delivery Overdue Report
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('delivery-overdue')
+    ->name('delivery-overdue.')
+    ->group(function () {
+
+        Route::get(
+            '/',
+            [DeliveryOverdueReportController::class, 'index']
+        )->name('index');
+
+        Route::get(
+            '/export/excel',
+            [DeliveryOverdueReportController::class, 'exportExcel']
+        )->name('export.excel');
+
+        Route::get(
+            '/export/pdf',
+            [DeliveryOverdueReportController::class, 'exportPdf']
+        )->name('export.pdf');
+
+        Route::get(
+            '/{id}',
+            [DeliveryOverdueReportController::class, 'show']
         )->name('show');
 
     });

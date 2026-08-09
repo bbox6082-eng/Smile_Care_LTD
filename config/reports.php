@@ -66,13 +66,15 @@ return [
                     [
                         'icon'=>'fa-user-times',
                         'title'=>'Inactive Patients',
-                        'desc'=>'Completed or inactive patients.'
+                        'desc'=>'Completed or inactive patients.',
+                        'route' => 'admin.reports.inactive-patients.index',
                     ],
 
                     [
                         'icon'=>'fa-user-md',
                         'title'=>'Patient by Doctor',
-                        'desc'=>'Doctor-wise patient report.'
+                        'desc'=>'Doctor-wise patient report.',
+                        'route' => 'admin.reports.patient-by-doctor.index',
                     ],
 
                 ]
@@ -90,31 +92,38 @@ return [
                     [
                         'icon'=>'fa-folder-open',
                         'title'=>'Active Cases',
-                        'desc'=>'Running treatment cases.'
+                        'desc'=>'Running treatment cases.',
+                        'route' => 'admin.reports.active-cases.index',
                     ],
 
                     [
                         'icon'=>'fa-check-circle',
                         'title'=>'Completed Cases',
-                        'desc'=>'Completed treatment cases.'
+                        'desc'=>'Completed treatment cases.',
+                        'route' => 'admin.reports.completed-cases.index',
+
                     ],
 
                     [
                         'icon'=>'fa-wallet',
                         'title'=>'Payment Due',
-                        'desc'=>'Cases with payment due.'
+                        'desc'=>'Cases with payment due.',
+                        'route' => 'admin.reports.payment-due.index',
                     ],
 
                     [
                         'icon'=>'fa-truck',
                         'title'=>'Delivery Pending',
-                        'desc'=>'Pending delivery cases.'
+                        'desc'=>'Pending delivery cases.',
+                        'route' => 'admin.reports.delivery-pending.index',
+                        
                     ],
 
                     [
                         'icon'=>'fa-exclamation-triangle',
                         'title'=>'Delivery Overdue',
-                        'desc'=>'Overdue delivery cases.'
+                        'desc'=>'Overdue delivery cases.',
+                        'route' => 'admin.reports.delivery-overdue.index',
                     ],
 
                 ]
