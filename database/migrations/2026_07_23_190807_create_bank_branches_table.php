@@ -13,10 +13,14 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('bank_id')
-                  ->constrained('banks')
-                  ->cascadeOnDelete();
+                ->constrained('banks')
+                ->cascadeOnDelete();
 
             $table->string('branch_name');
+
+            $table->string('account_name')->nullable();
+
+            $table->string('account_number')->nullable();
 
             $table->timestamps();
 

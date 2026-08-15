@@ -28,8 +28,12 @@
 
                         <h6 class="text-secondary border-bottom pb-2 mb-3">Doctor details</h6>
                         <div class="mb-3">
-                            <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
+                            <label for="name" class="form-label">Dr. Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="name" name="name" value="{{ old('name') }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="chamber_name" class="form-label">Chamber Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="chamber_name" name="chamber_name" value="{{ old('chamber_name') }}" required>
                         </div>
                         <div class="mb-3">
                             <label for="chamber_address" class="form-label">Chamber address <span class="text-danger">*</span></label>

@@ -26,7 +26,7 @@
                 <table class="table table-striped align-middle">
                     <thead>
                         <tr>
-                            <th>Name</th>
+                            <th>Dr. Name</th>
                             <th>Mobile</th>
                             <th>Region / Area / Territory</th>
                             <th>Chamber</th>

@@ -27,6 +27,7 @@ use App\Exports\PaymentsExport;
 use App\Exports\DoctorsExport;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use App\Models\BankBranch;
 
 class AdminController extends Controller
 {
@@ -656,6 +657,7 @@ class AdminController extends Controller
         $mrOptions = $this->marketingRepOptions();
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'chamber_name' => 'required|string|max:255',
             'chamber_address' => 'required|string',
             'chamber_map_link' => 'nullable|url|max:2048',
             'mobile_number' => 'required|string|max:50',
@@ -675,6 +677,7 @@ class AdminController extends Controller
 
         Doctor::create([
             'name' => $validated['name'],
+            'chamber_name' => $validated['chamber_name'],
             'chamber_address' => $validated['chamber_address'],
             'chamber_map_link' => $validated['chamber_map_link'] ?? null,
             'mobile_number' => $validated['mobile_number'],
@@ -715,6 +718,7 @@ class AdminController extends Controller
         $mrOptions = $this->marketingRepOptions();
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'chamber_name' => 'required|string|max:255',
             'chamber_address' => 'required|string',
             'chamber_map_link' => 'nullable|url|max:2048',
             'mobile_number' => 'required|string|max:50',
@@ -734,6 +738,7 @@ class AdminController extends Controller
 
         $updateData = [
             'name' => $validated['name'],
+            'chamber_name' => $validated['chamber_name'],
             'chamber_address' => $validated['chamber_address'],
             'chamber_map_link' => $validated['chamber_map_link'] ?? null,
             'mobile_number' => $validated['mobile_number'],
@@ -1211,12 +1216,12 @@ class AdminController extends Controller
                 if ($totalDelivered == 0) {
 
                     $row->case_status_level = 'success';
-                    $row->case_status_text = 'Case Start';
+                    $row->case_status_text = 'Payment Start';
 
                 } elseif (abs($expectedPayment - $totalPaid) < 0.01) {
 
                     $row->case_status_level = 'warning';
-                    $row->case_status_text = 'Equal';
+                    $row->case_status_text = 'Payment & Delivery Ratio Equal';
 
                 } elseif ($totalPaid < $expectedPayment) {
 
@@ -1226,7 +1231,7 @@ class AdminController extends Controller
                 } else {
 
                     $row->case_status_level = 'success';
-                    $row->case_status_text = 'Case Start';
+                    $row->case_status_text = 'Payment Start';
 
                 }
             }
@@ -1505,11 +1510,54 @@ class AdminController extends Controller
         $newUpper = (int) $data['upper_delivered'];
         $newLower = (int) $data['lower_delivered'];
 
+        // Prevent completely empty delivery records.
+        // A delivery is valid if it contains at least one case
+        // or a payment amount.
+        if (
+            $newUpper === 0 &&
+            $newLower === 0 &&
+            (float) $data['paid_amount'] === 0.0
+        ) {
+            return response()->json([
+                'message' => 'Enter at least one delivered case or a paid amount.'
+            ], 422);
+        }
+
         if ($deliveredUpper + $newUpper > $totalUpper) {
             return response()->json(['message' => 'Upper delivered exceeds total upper cases'], 422);
         }
         if ($deliveredLower + $newLower > $totalLower) {
             return response()->json(['message' => 'Lower delivered exceeds total lower cases'], 422);
+        }
+
+
+        // Save / update reusable bank branch account information
+        if (
+            $data['payment_method'] === 'bank_transfer' &&
+            !empty($data['bank_name']) &&
+            !empty($data['branch_name']) &&
+            !empty($data['account_name']) &&
+            !empty($data['account_number'])
+        ) {
+            $bank = \App\Models\Bank::where(
+                'bank_name',
+                trim($data['bank_name'])
+            )->first();
+
+            if ($bank) {
+                $branch = BankBranch::where('bank_id', $bank->id)
+                    ->whereRaw(
+                        'LOWER(TRIM(branch_name)) = ?',
+                        [strtolower(trim($data['branch_name']))]
+                    )
+                    ->first();
+
+                if ($branch) {
+                    $branch->account_name = trim($data['account_name']);
+                    $branch->account_number = trim($data['account_number']);
+                    $branch->save();
+                }
+            }
         }
 
         // Save delivery

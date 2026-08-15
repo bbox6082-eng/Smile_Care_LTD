@@ -10,6 +10,8 @@ class BankBranch extends Model
     protected $fillable = [
         'bank_id',
         'branch_name',
+        'account_name',
+        'account_number',
     ];
 
     public function bank(): BelongsTo

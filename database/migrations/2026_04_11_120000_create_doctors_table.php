@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('contact')->nullable();
+            $table->string('chamber_name');
             $table->text('chamber_address')->nullable();
             $table->string('marketing_representative_name')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();

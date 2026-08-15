@@ -75,6 +75,10 @@
                         <p class="mb-0">{{ $doctor->email ?? '—' }}</p>
                     </div>
                     <div class="col-12 mb-3">
+                        <strong><i class="fas fa-clinic-medical me-2"></i>Chamber Name</strong>
+                        <p class="mb-0">{{ $doctor->chamber_name ?? '—' }}</p>
+                    </div>
+                    <div class="col-12 mb-3">
                         <strong><i class="fas fa-clinic-medical me-2"></i>Chamber address</strong>
                         <p class="mb-0">{{ $doctor->chamber_address ?? '—' }}</p>
                     </div>

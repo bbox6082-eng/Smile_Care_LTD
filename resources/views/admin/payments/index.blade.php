@@ -144,137 +144,361 @@
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead>
-                        <tr>
-                            <th>Patient</th>
-                            <th>Total Amount</th>
-                            <th>Payment Method</th>
-                            <th>Payment Type</th>
-                            <th>Last Payment Date</th>
-                            <th>Remaining Balance</th>
-                            <th>Total Paid Amount</th>
-                            <th>Total Quantity Delivered</th>
-                            <th>Reminder</th>
-                            <th>Case Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($payments as $payment)
-                        <tr class="clickable-row"
-                            data-href="{{ route('admin.payments.plan.index') }}?predict3d_id={{ urlencode($payment->predict3d_id) }}">
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <div class="avatar-circle me-3" style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
-                                        {{ strtoupper(substr($payment->patient_full_name ?? 'P', 0, 1)) }}
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold">
-                                            {{ $payment->patient_full_name ?? 'Unknown' }}
-                                            @php $st = strtolower($payment->patient_status ?? ''); @endphp
-                                            <span class="badge ms-2 {{ $st === 'active' ? 'bg-success' : 'bg-secondary' }}">{{ ucfirst($payment->patient_status ?? 'unknown') }}</span>
-                                        </div>
-                                        <small class="text-muted">ID: {{ $payment->predict3d_id }} {{ $payment->patient_phone ? '· '.$payment->patient_phone : '' }}</small>
-                                    </div>
-                                </div>
-                            </td>
-                            <td><strong class="text-success fs-6">BDT {{ number_format($payment->total_amount ?? 0, 2) }}</strong></td>
-                            <td>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Total Amount</th>
+                                <th>Total Paid Amount</th>
+                                <th>Remaining Balance</th>
+                                <th>Payment Status</th>
+                                <th>Last Payment Date</th>
+                                <th>Payment Method</th>
+                                <th>Payment Type</th>
+                                <th>Total Quantity Delivered</th>
+                                <th>Reminder</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach($payments as $payment)
+
                                 @php
+                                    /*
+                                    |--------------------------------------------------------------------------
+                                    | Payment Calculations
+                                    |--------------------------------------------------------------------------
+                                    */
+
+                                    $totalAmount = (float) ($payment->total_amount ?? 0);
+                                    $totalPaid = (float) ($payment->total_paid ?? 0);
+                                    $remainingBalance = max(
+                                        0,
+                                        (float) ($payment->remaining_amount ?? ($totalAmount - $totalPaid))
+                                    );
+
+                                    /*
+                                    |--------------------------------------------------------------------------
+                                    | Payment Status
+                                    |--------------------------------------------------------------------------
+                                    */
+
+                                    if ($remainingBalance <= 0) {
+                                        $paymentStatus = 'Paid';
+                                        $paymentStatusClass = 'bg-success';
+                                    } elseif ($totalPaid > 0) {
+                                        $paymentStatus = 'Payment Due';
+                                        $paymentStatusClass = 'bg-warning text-dark';
+                                    } else {
+                                        $paymentStatus = 'Unpaid';
+                                        $paymentStatusClass = 'bg-danger';
+                                    }
+
+                                    /*
+                                    |--------------------------------------------------------------------------
+                                    | Payment Method
+                                    |--------------------------------------------------------------------------
+                                    */
+
+                                    $method = strtolower($payment->payment_method ?? '');
+
                                     $methodIcons = [
                                         'cash' => 'money-bill-wave',
                                         'card' => 'credit-card',
                                         'bank_transfer' => 'university',
-                                        'check' => 'money-check'
+                                        'mobile_banking' => 'mobile-screen-button',
+                                        'check' => 'money-check',
                                     ];
+
                                     $methodColors = [
                                         'cash' => 'success',
                                         'card' => 'primary',
                                         'bank_transfer' => 'info',
-                                        'check' => 'warning'
+                                        'mobile_banking' => 'warning text-dark',
+                                        'check' => 'secondary',
                                     ];
-                                @endphp
-                                <span class="badge bg-{{ $methodColors[$payment->payment_method] ?? 'secondary' }}">
-                                    <i class="fas fa-{{ $methodIcons[$payment->payment_method] ?? 'question' }} me-1"></i>
-                                    {{ ucfirst(str_replace('_', ' ', $payment->payment_method)) }}
-                                </span>
-                            </td>
-                            <td>
-                                @if($payment->is_installment)
-                                    <span class="badge bg-info">Installment</span>
-                                    @if($payment->next_payment_date)
-                                        <div class="small text-muted">Next: {{ \Carbon\Carbon::parse($payment->next_payment_date)->format('M d, Y') }}</div>
-                                    @endif
-                                @else
-                                    <span class="badge bg-success">Full</span>
-                                @endif
-                            </td>
-                            <td>
-                                @if(!empty($payment->payment_date))
-                                    {{ \Carbon\Carbon::parse($payment->payment_date)->format('M d, Y') }}
-                                @else
-                                    <span class="text-muted">No payment yet</span>
-                                @endif
-                            </td>
-                            <td><strong>BDT {{ number_format($payment->remaining_amount ?? 0, 2) }}</strong></td>
-                            <td><strong class="text-primary">BDT {{ number_format($payment->total_paid ?? 0, 2) }}</strong></td>
-                            <td>
-                                <span class="badge bg-primary">
-                                    U: {{ $payment->total_upper_delivered }}
-                                </span>
 
-                                <span class="badge bg-success ms-1">
-                                    L: {{ $payment->total_lower_delivered }}
-                                </span>
-                            </td>
-                            <td>
-                                @php
+                                    $methodLabel = ucfirst(
+                                        str_replace('_', ' ', $method ?: 'Not specified')
+                                    );
+
+                                    /*
+                                    |--------------------------------------------------------------------------
+                                    | Payment Type
+                                    |--------------------------------------------------------------------------
+                                    */
+
+                                    $isInstallment = (bool) ($payment->is_installment ?? false);
+
+                                    /*
+                                    |--------------------------------------------------------------------------
+                                    | Delivered Quantity
+                                    |--------------------------------------------------------------------------
+                                    */
+
+                                    $upperDelivered = (int) ($payment->total_upper_delivered ?? 0);
+                                    $lowerDelivered = (int) ($payment->total_lower_delivered ?? 0);
+
+                                    /*
+                                    |--------------------------------------------------------------------------
+                                    | Reminder
+                                    |--------------------------------------------------------------------------
+                                    */
+
                                     $lvl = $payment->reminder_level ?? 'normal';
-                                    $cls = $lvl === 'critical_unpaid' ? 'bg-danger'
-                                        : ($lvl === 'critical' ? 'bg-danger'
-                                        : ($lvl === 'warning' ? 'bg-warning text-dark'
-                                        : ($lvl === 'closed' ? 'bg-success' : 'bg-secondary')));
-                                @endphp
-                                <span class="badge {{ $cls }} px-3 py-2" style="font-size:.78rem; font-weight:700; letter-spacing:.2px;">
-                                    {{ $payment->reminder_text ?? 'No reminder' }}
-                                </span>
-                            </td>
-                            <td>
-                                @php
-                                    $caseCls = match($payment->case_status_level) {
+
+                                    $reminderClass = match ($lvl) {
+                                        'critical_unpaid',
                                         'critical' => 'bg-danger',
+
                                         'warning' => 'bg-warning text-dark',
-                                        'closed' => 'bg-secondary',
-                                        default => 'bg-success',
+
+                                        'closed' => 'bg-success',
+
+                                        default => 'bg-secondary',
                                     };
+
+                                    /*
+                                    |--------------------------------------------------------------------------
+                                    | Patient Status
+                                    |--------------------------------------------------------------------------
+                                    */
+
+                                    $patientStatus = strtolower(
+                                        $payment->patient_status ?? 'unknown'
+                                    );
+
+                                    /*
+                                    |--------------------------------------------------------------------------
+                                    | Case Row Class
+                                    |--------------------------------------------------------------------------
+                                    */
+
+                                    $rowClass = '';
+
+                                    if ($lvl === 'critical_unpaid') {
+                                        $rowClass = 'table-reminder-critical';
+                                    } elseif ($lvl === 'critical') {
+                                        $rowClass = 'table-reminder-red';
+                                    } elseif ($lvl === 'warning') {
+                                        $rowClass = 'table-reminder-yellow';
+                                    } elseif ($lvl === 'closed') {
+                                        $rowClass = 'table-reminder-closed';
+                                    }
                                 @endphp
 
-                                <span class="badge {{ $caseCls }}">
-                                    {{ $payment->case_status_text }}
-                                </span>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
+                                <tr
+                                    class="clickable-row {{ $rowClass }}"
+                                    data-href="{{ route('admin.payments.plan.index') }}?predict3d_id={{ urlencode($payment->predict3d_id) }}"
+                                >
+
+                                    {{-- ==========================================================
+                                        1. PATIENT
+                                    =========================================================== --}}
+                                    <td>
+                                        <div class="d-flex align-items-center">
+
+                                            <div
+                                                class="avatar-circle me-3"
+                                                style="
+                                                    width:40px;
+                                                    height:40px;
+                                                    background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+                                                    border-radius:50%;
+                                                    display:flex;
+                                                    align-items:center;
+                                                    justify-content:center;
+                                                    color:white;
+                                                    font-weight:bold;
+                                                "
+                                            >
+                                                {{ strtoupper(substr($payment->patient_full_name ?? 'P', 0, 1)) }}
+                                            </div>
+
+                                            <div>
+                                                <div class="fw-bold">
+
+                                                    {{ $payment->patient_full_name ?? 'Unknown' }}
+
+                                                    <span class="badge ms-2
+                                                        {{ $patientStatus === 'active'
+                                                            ? 'bg-success'
+                                                            : 'bg-secondary' }}">
+                                                        {{ ucfirst($payment->patient_status ?? 'Unknown') }}
+                                                    </span>
+
+                                                </div>
+
+                                                <small class="text-muted">
+                                                    ID: {{ $payment->predict3d_id }}
+
+                                                    @if($payment->patient_phone)
+                                                        · {{ $payment->patient_phone }}
+                                                    @endif
+                                                </small>
+                                            </div>
+
+                                        </div>
+                                    </td>
+
+
+                                    {{-- ==========================================================
+                                        2. TOTAL AMOUNT
+                                    =========================================================== --}}
+                                    <td>
+                                        <strong class="text-success fs-6">
+                                            BDT {{ number_format($totalAmount, 2) }}
+                                        </strong>
+                                    </td>
+
+
+                                    {{-- ==========================================================
+                                        3. TOTAL PAID AMOUNT
+                                    =========================================================== --}}
+                                    <td>
+                                        <strong class="text-primary">
+                                            BDT {{ number_format($totalPaid, 2) }}
+                                        </strong>
+                                    </td>
+
+
+                                    {{-- ==========================================================
+                                        4. REMAINING BALANCE
+                                    =========================================================== --}}
+                                    <td>
+                                        <strong class="{{ $remainingBalance > 0 ? 'text-danger' : 'text-success' }}">
+                                            BDT {{ number_format($remainingBalance, 2) }}
+                                        </strong>
+                                    </td>
+
+
+                                    {{-- ==========================================================
+                                        5. PAYMENT STATUS
+                                    =========================================================== --}}
+                                    <td>
+                                        <span class="badge {{ $paymentStatusClass }} px-3 py-2">
+                                            <i class="fas
+                                                {{ $remainingBalance <= 0
+                                                    ? 'fa-check-circle'
+                                                    : 'fa-exclamation-circle' }}
+                                                me-1">
+                                            </i>
+
+                                            {{ $paymentStatus }}
+                                        </span>
+                                    </td>
+
+
+                                    {{-- ==========================================================
+                                        6. LAST PAYMENT DATE
+                                    =========================================================== --}}
+                                    <td>
+                                        @if(!empty($payment->payment_date))
+
+                                            <strong>
+                                                {{ \Carbon\Carbon::parse($payment->payment_date)->format('M d, Y') }}
+                                            </strong>
+
+                                        @else
+
+                                            <span class="text-muted">
+                                                No payment yet
+                                            </span>
+
+                                        @endif
+                                    </td>
+
+
+                                    {{-- ==========================================================
+                                        7. PAYMENT METHOD
+                                    =========================================================== --}}
+                                    <td>
+                                        <span
+                                            class="badge bg-{{ $methodColors[$method] ?? 'secondary' }}"
+                                        >
+                                            <i class="fas fa-{{ $methodIcons[$method] ?? 'question-circle' }} me-1"></i>
+
+                                            {{ $methodLabel }}
+                                        </span>
+                                    </td>
+
+
+                                    {{-- ==========================================================
+                                        8. PAYMENT TYPE
+                                    =========================================================== --}}
+                                    <td>
+
+                                        @if($isInstallment)
+
+                                            <span class="badge bg-info">
+                                                <i class="fas fa-layer-group me-1"></i>
+                                                Installment
+                                            </span>
+
+                                            @if($payment->next_payment_date)
+                                                <div class="small text-muted mt-1">
+                                                    Next:
+                                                    {{ \Carbon\Carbon::parse($payment->next_payment_date)->format('M d, Y') }}
+                                                </div>
+                                            @endif
+
+                                        @else
+
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-money-check-alt me-1"></i>
+                                                Full
+                                            </span>
+
+                                        @endif
+
+                                    </td>
+
+
+                                    {{-- ==========================================================
+                                        9. TOTAL QUANTITY DELIVERED
+                                    =========================================================== --}}
+                                    <td>
+
+                                        <span class="badge bg-primary">
+                                            U: {{ $upperDelivered }}
+                                        </span>
+
+                                        <span class="badge bg-success ms-1">
+                                            L: {{ $lowerDelivered }}
+                                        </span>
+
+                                        <div class="small text-muted mt-1">
+                                            Total:
+                                            {{ $upperDelivered + $lowerDelivered }}
+                                        </div>
+
+                                    </td>
+
+
+                                    {{-- ==========================================================
+                                        10. REMINDER
+                                    =========================================================== --}}
+                                    <td>
+
+                                        <span
+                                            class="badge {{ $reminderClass }} px-3 py-2"
+                                            style="
+                                                font-size:.78rem;
+                                                font-weight:700;
+                                                letter-spacing:.2px;
+                                            "
+                                        >
+                                            {{ $payment->reminder_text ?? 'No reminder' }}
+                                        </span>
+
+                                    </td>
+
+                                </tr>
+
+                            @endforeach
+                        </tbody>
                 </table>
             </div>
 
-            <!-- Summary Stats -->
-            <div class="row mt-4">
-                <div class="col-md-4">
-                    <div class="alert alert-success">
-                        <strong>Grand Total: BDT {{ number_format($grandTotal ?? 0, 2) }}</strong>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="alert alert-warning">
-                        <strong>This Month: BDT {{ number_format($totalThisMonth ?? 0, 2) }}</strong>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="alert alert-primary">
-                        <strong>Today: BDT {{ number_format($totalToday ?? 0, 2) }}</strong>
-                    </div>
-                </div>
-            </div>
+           
 
             <!-- Pagination -->
             <div class="d-flex justify-content-center mt-4">

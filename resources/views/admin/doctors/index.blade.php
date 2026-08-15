@@ -99,9 +99,10 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th>Name</th>
+                            <th>Dr. Name</th>
                             <th>Mobile</th>
                             <th>Region / Area / Territory</th>
+                            <th>Chamber Name</th>
                             <th>Chamber Address</th>
                             <th>Added By</th>
                             <th>Date Added</th>

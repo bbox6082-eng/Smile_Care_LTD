@@ -543,6 +543,7 @@
   let totalLocked = false;
   let caseClosed = false;
   let casesState = { total_upper: 0, total_lower: 0, delivered_upper: 0, delivered_lower: 0, remaining_upper: 0, remaining_lower: 0 };
+  let loadedBranches = [];
 
   function selectedMethod(){
     for(const r of $pmRadios){ if(r.checked) return r.value; }
@@ -783,8 +784,63 @@ function toggleMobileBanking() {
 
   bankSelect.addEventListener("change", async function () {
 
-    branchSelect.innerHTML =
-        '<option value="">Select Branch</option>';
+      branchSelect.innerHTML =
+          '<option value="">Select Branch</option>';
+
+      accountName.value = '';
+      accountNumber.value = '';
+
+      accountName.disabled = true;
+      accountNumber.disabled = true;
+
+      loadedBranches = [];
+
+      if (this.value === '') {
+          branchSelect.disabled = true;
+          return;
+      }
+
+      try {
+
+          const response = await fetch(
+              '/admin/banks/' + this.value + '/branches'
+          );
+
+          if (!response.ok) {
+              throw new Error('Failed to load branches.');
+          }
+
+          loadedBranches = await response.json();
+
+          loadedBranches.forEach(function (branch) {
+
+              const option = document.createElement('option');
+
+              option.value = branch.id;
+
+              option.text = branch.branch_name;
+
+              branchSelect.appendChild(option);
+
+          });
+
+          branchSelect.disabled = false;
+
+      } catch (e) {
+
+          console.error(e);
+
+          alert('Failed to load branches.');
+
+          branchSelect.disabled = true;
+      }
+
+  });
+
+
+  branchSelect.addEventListener("change", function () {
+
+    const branchId = this.value;
 
     accountName.value = '';
     accountNumber.value = '';
@@ -792,66 +848,29 @@ function toggleMobileBanking() {
     accountName.disabled = true;
     accountNumber.disabled = true;
 
-    if (this.value === '') {
-
-        branchSelect.disabled = true;
+    if (branchId === '') {
         return;
-
     }
 
-    try {
+    const branch = loadedBranches.find(
+        item => String(item.id) === String(branchId)
+    );
 
-        const response = await fetch(
-            '/admin/banks/' + this.value + '/branches'
-        );
-
-        const branches = await response.json();
-
-        branches.forEach(function (branch) {
-
-            const option = document.createElement('option');
-
-            option.value = branch.id;
-            option.text = branch.branch_name;
-
-            branchSelect.appendChild(option);
-
-        });
-
-        branchSelect.disabled = false;
-
-    } catch (e) {
-
-        console.log(e);
-
-        alert('Failed to load branches.');
-
+    if (!branch) {
+        return;
     }
+
+    // Automatically load saved account information
+    accountName.value = branch.account_name || '';
+    accountNumber.value = branch.account_number || '';
+
+    // Allow editing
+    accountName.disabled = false;
+    accountNumber.disabled = false;
 
 });
 
-  branchSelect.addEventListener("change", function(){
-
-    if(this.value===""){
-
-        accountName.disabled = true;
-
-        accountNumber.disabled = true;
-
-        accountName.value = "";
-
-        accountNumber.value = "";
-
-    }else{
-
-        accountName.disabled = false;
-
-        accountNumber.disabled = false;
-
-    }
-
-  });
-
+  
   function renderCases() {
     if ($casesUpperTotal) $casesUpperTotal.textContent = String(casesState.total_upper ?? 0);
     if ($casesLowerTotal) $casesLowerTotal.textContent = String(casesState.total_lower ?? 0);
@@ -912,10 +931,14 @@ function toggleMobileBanking() {
               <label class="form-label">Delivery date</label>
               <input type="date" class="form-control js-date" value="${today}">
             </div>
-            <div class="col-md-2 d-flex gap-2">
-              <button type="button" class="btn btn-success w-100 js-save">
-                <i class="fas fa-save me-1"></i>Save
-              </button>
+            <div class="col-md-2 d-flex flex-column gap-2">
+                <button type="button" class="btn btn-success w-100 js-save">
+                    <i class="fas fa-save me-1"></i>Save
+                </button>
+
+                <button type="button" class="btn btn-outline-secondary w-100 js-cancel">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
             </div>
           </div>
         </div>
@@ -1175,14 +1198,34 @@ function toggleMobileBanking() {
     togglePlanType();
   }));
 
-  // Save a delivery (delegated)
+  // Save / Cancel a delivery
   if ($deliveriesContainer) {
     $deliveriesContainer.addEventListener('click', async (e) => {
+
+      // Cancel delivery draft
+      const cancelBtn = e.target.closest('.js-cancel');
+
+      if (cancelBtn) {
+        const card = cancelBtn.closest('[data-delivery-draft="1"]');
+        if (card) card.remove();
+        return;
+      }
+
+      // Save delivery
       const btn = e.target.closest('.js-save');
       if (!btn) return;
-      if (caseClosed) { alert('This case is closed. No new delivery can be added.'); return; }
-      if (!currentPredict) { alert('Fetch a patient first'); return; }
-      const card = btn.closest('[data-delivery-draft=\"1\"]');
+
+      if (caseClosed) {
+        alert('This case is closed. No new delivery can be added.');
+        return;
+      }
+
+      if (!currentPredict) {
+        alert('Fetch a patient first');
+        return;
+      }
+
+      const card = btn.closest('[data-delivery-draft="1"]');
       if (!card) return;
 
       const upper = parseInt(card.querySelector('.js-upper').value || '0', 10) || 0;
@@ -1190,50 +1233,86 @@ function toggleMobileBanking() {
       const paidAmt = parseFloat(card.querySelector('.js-paid').value || '0') || 0;
       const date = card.querySelector('.js-date').value;
 
-      if (!date) { alert('Select a delivery date'); return; }
-      if (upper < 0 || lower < 0) { alert('Cases must be 0 or greater'); return; }
-      if (paidAmt < 0) { alert('Paid amount must be 0 or greater'); return; }
+      if (!date) {
+        alert('Select a delivery date');
+        return;
+      }
+
+      if (upper < 0 || lower < 0) {
+        alert('Cases must be 0 or greater');
+        return;
+      }
+
+      if (paidAmt < 0) {
+        alert('Paid amount must be 0 or greater');
+        return;
+      }
+
+      // Do not save an empty delivery.
+      // A delivery is valid when at least one case or a payment amount is entered.
+      if (upper === 0 && lower === 0 && paidAmt === 0) {
+        alert('Enter at least one delivered case or a paid amount.');
+        return;
+      }
 
       const total = parseFloat($totalAmount.value || '0') || 0;
-      if (total <= 0) { alert('Set Total Amount first'); return; }
+      if (total <= 0) {
+        alert('Set Total Amount first');
+        return;
+      }
 
       btn.disabled = true;
+
       try {
         const url = routeAddDelivery.replace('PREDICT_ID', encodeURIComponent(currentPredict));
         const res = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': csrf
+          },
           body: JSON.stringify({
+            upper_delivered: upper,
+            lower_delivered: lower,
+            paid_amount: paidAmt,
+            delivery_date: date,
+            payment_method: selectedMethod(),
+            total_amount: parseFloat($totalAmount.value || '0') || 0,
 
-              upper_delivered: upper,
-              lower_delivered: lower,
-              paid_amount: paidAmt,
-              delivery_date: date,
-              payment_method: selectedMethod(),
-              total_amount: parseFloat($totalAmount.value || '0') || 0,
+            bank_name: selectedMethod() === "bank_transfer"
+              ? bankSelect.options[bankSelect.selectedIndex]?.text.trim() || ''
+              : '',
 
-              bank_name: bankSelect.value,
-              branch_name: branchSelect.value,
-              account_name: accountName.value,
+            branch_name: selectedMethod() === "bank_transfer"
+              ? branchSelect.options[branchSelect.selectedIndex]?.text.trim() || ''
+              : '',
 
-              account_number: selectedMethod() === "mobile_banking"
-                  ? document.getElementById("mobileNumber").value
-                  : accountNumber.value,
+            account_name: selectedMethod() === "bank_transfer"
+              ? accountName.value.trim()
+              : '',
 
-              mobile_provider: document.getElementById("mobileBank").value,
-              transaction_id: document.getElementById("transactionId").value
+            account_number: selectedMethod() === "mobile_banking"
+              ? document.getElementById("mobileNumber").value.trim()
+              : accountNumber.value.trim(),
 
+            mobile_provider: document.getElementById("mobileBank").value,
+            transaction_id: document.getElementById("transactionId").value
           })
         });
+
         const contentType = res.headers.get('content-type') || '';
+
         if (!res.ok) {
           let msg = 'Failed to save delivery';
+
           if (contentType.includes('application/json')) {
             const j = await res.json();
             msg = j.message || msg;
           } else {
             msg = await res.text() || msg;
           }
+
           throw new Error(msg);
         }
 
@@ -1245,34 +1324,40 @@ function toggleMobileBanking() {
 
         const paidNow = pays.reduce((s, x) => s + parseFloat(x.amount || 0), 0);
         const remainingNow = Math.max(0, parseFloat(plan.total_amount || 0) - paidNow);
+
         $remaining.textContent = remainingNow.toFixed(2);
         $sumTotal.textContent = parseFloat(plan.total_amount || 0).toFixed(2);
         $sumPaid.textContent = paidNow.toFixed(2);
         $sumRemaining.textContent = remainingNow.toFixed(2);
 
-        $history.innerHTML = pays.map(x=>`<tr><td>${fmtDate(x.payment_date)}</td><td>${fmtMethod(x.payment_method)}</td><td>BDT ${parseFloat(x.amount).toFixed(2)}</td></tr>`).join('');
+        $history.innerHTML = pays.map(x =>
+          `<tr><td>${fmtDate(x.payment_date)}</td><td>${fmtMethod(x.payment_method)}</td><td>BDT ${parseFloat(x.amount).toFixed(2)}</td></tr>`
+        ).join('');
 
         $deliveriesContainer.innerHTML = '';
+
         deliveries.forEach((d, i) => {
           $deliveriesContainer.insertAdjacentHTML('beforeend', `
-            <div class=\"card mb-2\">
-              <div class=\"card-body\">
-                <div class=\"d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2\">
-                  <div class=\"fw-semibold\">Delivered</div>
-                  <div class=\"text-muted small\">Delivery #${i + 1} · ${fmtDate(d.delivery_date)}</div>
+            <div class="card mb-2">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                  <div class="fw-semibold">Delivered</div>
+                  <div class="text-muted small">Delivery #${i + 1} · ${fmtDate(d.delivery_date)}</div>
                 </div>
-                <div class=\"row g-3\">
-                  <div class=\"col-md-3\"><div class=\"small text-muted\">Upper delivered</div><div class=\"fw-semibold\">${parseInt(d.upper_delivered || 0, 10)}</div></div>
-                  <div class=\"col-md-3\"><div class=\"small text-muted\">Lower delivered</div><div class=\"fw-semibold\">${parseInt(d.lower_delivered || 0, 10)}</div></div>
-                  <div class=\"col-md-3\"><div class=\"small text-muted\">Paid</div><div class=\"fw-semibold\">BDT ${parseFloat(d.paid_amount || 0).toFixed(2)}</div></div>
-                  <div class=\"col-md-3\"><div class=\"small text-muted\">Date</div><div class=\"fw-semibold\">${fmtDate(d.delivery_date)}</div></div>
+                <div class="row g-3">
+                  <div class="col-md-3"><div class="small text-muted">Upper delivered</div><div class="fw-semibold">${parseInt(d.upper_delivered || 0, 10)}</div></div>
+                  <div class="col-md-3"><div class="small text-muted">Lower delivered</div><div class="fw-semibold">${parseInt(d.lower_delivered || 0, 10)}</div></div>
+                  <div class="col-md-3"><div class="small text-muted">Paid</div><div class="fw-semibold">BDT ${parseFloat(d.paid_amount || 0).toFixed(2)}</div></div>
+                  <div class="col-md-3"><div class="small text-muted">Date</div><div class="fw-semibold">${fmtDate(d.delivery_date)}</div></div>
                 </div>
               </div>
             </div>
           `);
         });
+
         renderCases();
         addNewDeliveryDraft();
+
       } catch (err) {
         alert(err.message || 'Error saving delivery');
       } finally {
