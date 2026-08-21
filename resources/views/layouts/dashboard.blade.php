@@ -148,8 +148,8 @@
             <div class="brand-logo">
                 <i class="fas fa-tooth"></i>
             </div>
-            <h4 class="mb-0">SmileCare</h4>
-            <small class="opacity-75">Dental Management</small>
+            <h4 class="mb-0">Smile Care Ltd</h4>
+            <small class="opacity-75">Case Management System</small>
         </div>
 
         <div class="user-info">

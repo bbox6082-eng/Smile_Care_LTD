@@ -3,1369 +3,4581 @@
 @section('title', 'Payments by 3D Predict ID - SmileCare')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <div class="page-title">
-    <i class="fas fa-file-invoice-dollar me-3"></i>
-    <h1>Payments by 3D Predict ID</h1>
-    <small class="text-muted ms-2">Search by Predict3DId, set total, and record payments</small>
-  </div>
-</div>
 
-<div class="card mb-3">
-  <div class="card-body">
-    <div class="row g-3 align-items-end">
-      <div class="col-md-3">
-        <label class="form-label">3D Predict ID</label>
-        <input id="predictId" type="text" class="form-control" placeholder="Enter Predict3DId">
-      </div>
-      <div class="col-md-2">
-        <button id="btnFetch" type="button" class="btn w-100 text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"><i class="fas fa-search me-2"></i>Search</button>
-      </div>
-      <div class="col-md-7 d-flex justify-content-end">
-      <div class="d-flex justify-content-end gap-2">
-           <a href="{{ route('admin.patients.index') }}"
-            class="btn btn-primary">
-              <i class="fas fa-list me-2"></i>
-              Patient List
-          </a>
+<style>
+    .payment-page .card {
+        border: 0;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+    }
 
-          <a href="{{ route('admin.payments.index') }}"
-            class="btn btn-primary">
-              <i class="fas fa-list me-2"></i>
-              Case Management List
-          </a>
-      </div>
-      </div>
-     </div>
-  </div>
-</div>
+    .payment-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        border-radius: 10px 10px 0 0;
+    }
 
-<!-- Patient Information (hidden until fetched) -->
-<div id="patientInfoSection" class="mb-3 d-none">
-  <div class="rounded-top px-3 py-2 text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-    <strong>Patient Information</strong>
-  </div>
-  <div class="border rounded-bottom p-3 bg-white">
-    <div id="patientInfoBody"></div>
-  </div>
-</div>
+    .payment-header h5 {
+        margin: 0;
+        font-weight: 600;
+    }
 
-<div id="planCard" class="card d-none">
-  <div class="card-header">
-    <h5 class="mb-0">Payment Plan</h5>
-  </div>
-  <div class="card-body">
-    <style>
-      .plan-metric {
+    .plan-metric {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 12px;
-        padding: 14px 16px;
+        gap: 15px;
+        padding: 14px 18px;
         border-radius: 12px;
         border: 1px solid rgba(0,0,0,.08);
         background: #fff;
-        box-shadow: 0 4px 14px rgba(0,0,0,.06);
+        box-shadow: 0 4px 14px rgba(0,0,0,.05);
         min-width: 220px;
-      }
-      .plan-metric-label {
-        font-size: .85rem;
+    }
+
+    .plan-metric-label {
+        font-size: .82rem;
         font-weight: 600;
-        letter-spacing: .2px;
         color: #6b7280;
         text-transform: uppercase;
-      }
-      .plan-metric-value {
+        letter-spacing: .3px;
+    }
+
+    .plan-metric-value {
         font-size: 1.35rem;
         font-weight: 800;
         color: #111827;
-        line-height: 1;
         white-space: nowrap;
-      }
-      .plan-metric-total { border-left: 6px solid #4f46e5; }
-      .plan-metric-paid { border-left: 6px solid #16a34a; }
-      .plan-metric-due  { border-left: 6px solid #dc2626; background: #fff5f5; }
-      .plan-metric-due .plan-metric-label { color: #991b1b; }
-      .plan-metric-due .plan-metric-value { color: #b91c1c; }
-    </style>
-    <!-- Summary Row -->
-    <div class="row g-3 mb-3">
-      <div class="col-12">
-        <div class="d-flex flex-wrap gap-3">
-          <div class="plan-metric plan-metric-total">
-            <div class="plan-metric-label">Total Amount</div>
-            <div class="plan-metric-value">BDT <span id="sumTotal">0.00</span></div>
-          </div>
-          <div class="plan-metric plan-metric-paid">
-            <div class="plan-metric-label">Paid Amount</div>
-            <div class="plan-metric-value">BDT <span id="sumPaid">0.00</span></div>
-          </div>
-          <div class="plan-metric plan-metric-due">
-            <div class="plan-metric-label">Due Amount</div>
-            <div class="plan-metric-value">BDT <span id="sumRemaining">0.00</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="row g-3">
-      <div class="col-md-4">
-        <label class="form-label">Payment Method</label>
-        <div class="d-flex gap-3 mt-1">
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="paymentMethod" id="pmCash" value="cash" checked>
-            <label class="form-check-label" for="pmCash">Cash</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="paymentMethod" id="pmCard" value="card">
-            <label class="form-check-label" for="pmCard">Card</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="paymentMethod" id="pmBank" value="bank_transfer">
-            <label class="form-check-label" for="pmBank">Bank Transfer</label>
-          </div>
-          <div class="form-check">
-          <input class="form-check-input"
-                type="radio"
-                name="paymentMethod"
-                id="pmMobile"
-                value="mobile_banking">
+    }
 
-          <label class="form-check-label" for="pmMobile">
-              Mobile Banking
-          </label>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <label class="form-label">Total Amount</label>
-        <div class="input-group">
-          <span class="input-group-text">BDT </span>
-          <input id="totalAmount" type="number" min="0" step="0.01" class="form-control" placeholder="0.00">
-          @if(auth()->check() && auth()->user()->role === 'admin')
-            <button id="btnEditTotal" class="btn btn-outline-secondary" type="button"><i class="fas fa-pen"></i></button>
-            <button id="btnSaveTotal" class="btn btn-outline-success d-none" type="button"><i class="fas fa-save"></i></button>
-          @endif
-        </div>
-        <small class="text-muted">Total is locked after save. Admins can click edit to update later.</small>
-      </div>
-      <div class="col-md-4">
-        <label class="form-label">Plan Type</label>
-        <div class="d-flex gap-3 mt-1">
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="planType" id="ptFull" value="full" checked>
-            <label class="form-check-label" for="ptFull">Full Payment</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="planType" id="ptInstallment" value="installment">
-            <label class="form-check-label" for="ptInstallment">Installment</label>
-          </div>
-        </div>
-      </div>
-    </div>
+    .plan-metric-total {
+        border-left: 6px solid #4f46e5;
+    }
 
-  <div id="bankTransferSection" class="row g-3 mt-3 d-none">
+    .plan-metric-paid {
+        border-left: 6px solid #16a34a;
+    }
 
-    <div class="col-md-3">
-        <label class="form-label d-flex justify-content-between align-items-center">
-            <span>Bank Name</span>
+    .plan-metric-due {
+        border-left: 6px solid #dc2626;
+        background: #fff5f5;
+    }
 
-            <button type="button"
-                    class="btn btn-sm text-white d-flex align-items-center justify-content-center"
-                    style="
-                        width:25px;
-                        height:25px;
-                        padding:0;
-                        background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
-                        border:none;
-                    "
-                    data-bs-toggle="modal"
-                    data-bs-target="#addBankModal">
-                <i class="fas fa-plus"></i>
-            </button>
-        </label>
+    .plan-metric-due .plan-metric-label {
+        color: #991b1b;
+    }
 
-        <select id="bankName" name="bank_name" class="form-select">
-            <option value="">Select Bank</option>
-        </select>
-    </div>
+    .plan-metric-due .plan-metric-value {
+        color: #b91c1c;
+    }
 
-    <div class="col-md-3">
-        <label class="form-label d-flex justify-content-between align-items-center">
-            <span>Branch Name</span>
+    .section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1f2937;
+    }
 
-            <button type="button"
-                    class="btn btn-sm text-white d-flex align-items-center justify-content-center"
-                    style="
-                        width:25px;
-                        height:25px;
-                        padding:0;
-                        background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
-                        border:none;
-                    "
-                    data-bs-toggle="modal"
-                    data-bs-target="#addBranchModal">
-                <i class="fas fa-plus"></i>
-            </button>
-        </label>
+    .delivery-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        background: #fff;
+    }
 
-        <select id="branchName"
-                name="branch_name"
-                class="form-select"
-                disabled>
-            <option value="">Select Branch</option>
-        </select>
-    </div>
+    .delivery-card .delivery-header {
+        background: #f8fafc;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 14px 18px;
+        border-radius: 12px 12px 0 0;
+    }
 
-    <div class="col-md-3">
-        <label class="form-label">Account Name</label>
+    .delivery-draft {
+        border: 2px solid #667eea;
+        border-radius: 12px;
+        background: #fff;
+    }
 
-        <input
-            type="text"
-            id="accountName"
-            name="account_name"
-            class="form-control"
-            placeholder="Enter Account Name"
-            disabled>
-    </div>
+    .delivery-draft .delivery-header {
+        background: linear-gradient(
+            135deg,
+            rgba(102,126,234,.10),
+            rgba(118,75,162,.08)
+        );
+        border-bottom: 1px solid #e5e7eb;
+        padding: 14px 18px;
+        border-radius: 10px 10px 0 0;
+    }
 
-    <div class="col-md-3">
-        <label class="form-label">Account Number</label>
+    .empty-history {
+        padding: 30px 15px;
+        text-align: center;
+        color: #6b7280;
+    }
 
-        <input
-            type="text"
-            id="accountNumber"
-            name="account_number"
-            class="form-control"
-            placeholder="Enter Account Number"
-            disabled>
-    </div>
+    .payment-badge {
+        min-width: 120px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-    </div>
+    .form-label {
+        font-weight: 600;
+        color: #1f2937;
+    }
 
-    <!-- Add Bank Modal -->
-    <div class="modal fade" id="addBankModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
+    .plan-actions {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+    }
 
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-university me-2"></i>
-                        Add New Bank
-                    </h5>
+    @media (max-width: 768px) {
+        .plan-actions {
+            justify-content: flex-start;
+        }
 
-                    <button class="btn-close"
-                            data-bs-dismiss="modal">
-                    </button>
+        .plan-metric {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="payment-page">
+
+    {{-- =========================================================
+         PAGE HEADER
+    ========================================================== --}}
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+
+        <div class="page-title">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-file-invoice-dollar me-3"></i>
+
+                <div>
+                    <h1 class="mb-0">Payments by 3D Predict ID</h1>
+
+                    <small class="text-muted">
+                        Search patient, create payment plan and manage deliveries
+                    </small>
                 </div>
+            </div>
+        </div>
 
-                <div class="modal-body">
+    </div>
 
-                    <label class="form-label">
-                        Bank Name
+
+    {{-- =========================================================
+         STEP 1 — SEARCH PATIENT
+    ========================================================== --}}
+    <div class="card mb-3">
+
+        <div class="card-body">
+
+            <div class="row g-3 align-items-end">
+
+                <div class="col-md-4">
+
+                    <label for="predictId" class="form-label">
+                        3D Predict ID
                     </label>
 
                     <input
+                        id="predictId"
                         type="text"
-                        id="newBankName"
                         class="form-control"
-                        placeholder="Enter Bank Name">
+                        placeholder="Enter Predict3DId"
+                    >
 
                 </div>
 
-                <div class="modal-footer">
-
-                    <button class="btn btn-secondary"
-                            data-bs-dismiss="modal">
-                        Cancel
-                    </button>
+                <div class="col-md-2">
 
                     <button
-                        id="btnSaveBank"
-                        class="btn btn-primary">
-                        Save
+                        id="btnFetch"
+                        type="button"
+                        class="btn w-100 text-white"
+                        style="background: linear-gradient(135deg,#667eea 0%,#764ba2 100%);"
+                    >
+                        <i class="fas fa-search me-2"></i>
+                        Search
+                    </button>
+
+                </div>
+
+                <div class="col-md-6">
+
+                    <div class="d-flex justify-content-md-end gap-2 flex-wrap">
+
+                        <a
+                            href="{{ route('admin.patients.index') }}"
+                            class="btn btn-outline-primary"
+                        >
+                            <i class="fas fa-users me-2"></i>
+                            Patient List
+                        </a>
+
+                        <a
+                            href="{{ route('admin.payments.index') }}"
+                            class="btn btn-outline-primary"
+                        >
+                            <i class="fas fa-list me-2"></i>
+                            Case Management
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    {{-- =========================================================
+         PATIENT INFORMATION
+    ========================================================== --}}
+    <div
+        id="patientInfoSection"
+        class="mb-3 d-none"
+    >
+
+        <div class="payment-header px-3 py-3">
+            <h5>
+                <i class="fas fa-user me-2"></i>
+                Patient Information
+            </h5>
+        </div>
+
+        <div class="border border-top-0 rounded-bottom p-4 bg-white">
+
+            <div id="patientInfoBody"></div>
+
+        </div>
+
+    </div>
+
+
+    {{-- =========================================================
+         STEP 2 — PAYMENT PLAN
+    ========================================================== --}}
+    <div
+        id="planCard"
+        class="card mb-4 d-none"
+    >
+
+        <div class="payment-header px-3 py-3">
+
+            <h5>
+                <i class="fas fa-file-invoice-dollar me-2"></i>
+                Payment Plan
+            </h5>
+
+        </div>
+
+        <div class="card-body p-4">
+
+            {{-- Summary --}}
+            <div class="row g-3 mb-4">
+
+                <div class="col-md-4">
+
+                    <div class="plan-metric plan-metric-total">
+
+                        <div class="plan-metric-label">
+                            Total Amount
+                        </div>
+
+                        <div class="plan-metric-value">
+                            BDT <span id="sumTotal">0.00</span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="col-md-4">
+
+                    <div class="plan-metric plan-metric-paid">
+
+                        <div class="plan-metric-label">
+                            Paid Amount
+                        </div>
+
+                        <div class="plan-metric-value">
+                            BDT <span id="sumPaid">0.00</span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="col-md-4">
+
+                    <div class="plan-metric plan-metric-due">
+
+                        <div class="plan-metric-label">
+                            Due Amount
+                        </div>
+
+                        <div class="plan-metric-value">
+                            BDT <span id="sumRemaining">0.00</span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            {{-- Plan Form --}}
+            <div class="row g-4 align-items-end">
+
+                {{-- Total Amount --}}
+                <div class="col-lg-5">
+
+                    <label
+                        for="totalAmount"
+                        class="form-label"
+                    >
+                        Total Amount
+                    </label>
+
+                    <div class="input-group">
+
+                        <span class="input-group-text">
+                            BDT
+                        </span>
+
+                        <input
+                            id="totalAmount"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            class="form-control"
+                            placeholder="0.00"
+                        >
+
+                        @if(auth()->check() && auth()->user()->role === 'admin')
+
+                            <button
+                                id="btnEditTotal"
+                                type="button"
+                                class="btn btn-outline-secondary d-none"
+                                title="Edit total amount"
+                            >
+                                <i class="fas fa-pen"></i>
+                            </button>
+
+                            <button
+                                id="btnSaveTotal"
+                                type="button"
+                                class="btn btn-outline-success d-none"
+                                title="Save updated total"
+                            >
+                                <i class="fas fa-save"></i>
+                            </button>
+
+                        @endif
+
+                    </div>
+
+                    <small class="text-muted">
+                        Total amount can be edited later by an administrator.
+                    </small>
+
+                </div>
+
+
+                {{-- Plan Type --}}
+                <div class="col-lg-4">
+
+                    <label class="form-label">
+                        Plan Type
+                    </label>
+
+                    <div class="d-flex gap-4 mt-2">
+
+                        <div class="form-check">
+
+                            <input
+                                class="form-check-input"
+                                type="radio"
+                                name="planType"
+                                id="ptFull"
+                                value="full"
+                                checked
+                            >
+
+                            <label
+                                class="form-check-label"
+                                for="ptFull"
+                            >
+                                Full Payment
+                            </label>
+
+                        </div>
+
+                        <div class="form-check">
+
+                            <input
+                                class="form-check-input"
+                                type="radio"
+                                name="planType"
+                                id="ptInstallment"
+                                value="installment"
+                            >
+
+                            <label
+                                class="form-check-label"
+                                for="ptInstallment"
+                            >
+                                Installment
+                            </label>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                {{-- Save Plan --}}
+                <div class="col-lg-3 plan-actions">
+
+                    <button
+                        id="btnSavePlan"
+                        type="button"
+                        class="btn btn-primary px-4"
+                    >
+                        <i class="fas fa-save me-2"></i>
+                        Save Plan
                     </button>
 
                 </div>
 
             </div>
+
+
+            {{-- Plan success message --}}
+            <div
+                id="planStatus"
+                class="alert alert-success mt-4 mb-0 d-none"
+                role="alert"
+            >
+                <i class="fas fa-check-circle me-2"></i>
+                <span id="planStatusText">
+                    Payment plan saved successfully.
+                </span>
+            </div>
+
         </div>
+
     </div>
 
-        <!-- Add Branch Modal -->
-    <div class="modal fade" id="addBranchModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
+        {{-- =========================================================
+         STEP 3 — DELIVERY SECTION
+    ========================================================== --}}
+    <div
+        id="deliverySection"
+        class="card mb-4 d-none"
+    >
 
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-code-branch me-2"></i>
-                        Add New Branch
-                    </h5>
+        <div class="payment-header px-3 py-3">
 
-                    <button class="btn-close"
-                            data-bs-dismiss="modal">
-                    </button>
-                </div>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
 
-                <div class="modal-body">
+                <h5>
+                    <i class="fas fa-truck me-2"></i>
+                    Delivery
+                </h5>
 
-                    <label class="form-label">
-                        Branch Name
-                    </label>
+                <div class="d-flex gap-2">
 
-                    <input
-                        type="text"
-                        id="newBranchName"
-                        class="form-control"
-                        placeholder="Enter Branch Name">
+                    <span
+                        id="caseClosedBadge"
+                        class="badge bg-dark d-none align-self-center"
+                    >
+                        <i class="fas fa-lock me-1"></i>
+                        Case Closed
+                    </span>
 
-                </div>
-
-                <div class="modal-footer">
-
-                    <button class="btn btn-secondary"
-                            data-bs-dismiss="modal">
-                        Cancel
+                    <button
+                        id="btnNewDelivery"
+                        type="button"
+                        class="btn btn-light btn-sm"
+                    >
+                        <i class="fas fa-plus me-1"></i>
+                        New Delivery
                     </button>
 
                     <button
-                        id="btnSaveBranch"
-                        class="btn btn-primary">
-                        Save
+                        id="btnDone"
+                        type="button"
+                        class="btn btn-success btn-sm d-none"
+                    >
+                        <i class="fas fa-check me-1"></i>
+                        Done
                     </button>
 
                 </div>
 
             </div>
+
         </div>
-    </div>
-    
 
-    <div id="mobileBankingSection" class="row g-3 mt-3 d-none">
 
-    <div class="col-md-4">
+        <div class="card-body p-4">
 
-        <label class="form-label">
-            Mobile Banking
-        </label>
+            {{-- Cases summary --}}
+            <div class="row g-3 mb-4">
 
-        <select id="mobileBank"
-                name="mobile_provider"
-                class="form-select">
+                <div class="col-md-3">
 
-            <option value="">Select Mobile Banking</option>
+                    <div class="plan-metric plan-metric-total">
 
-            <option value="bkash">bKash</option>
+                        <div class="plan-metric-label">
+                            Total Upper Cases
+                        </div>
 
-            <option value="nagad">Nagad</option>
+                        <div class="plan-metric-value">
+                            <span id="casesUpperTotal">0</span>
+                        </div>
 
-            <option value="rocket">Rocket</option>
+                    </div>
 
-            <option value="upay">Upay</option>
+                </div>
 
-        </select>
+                <div class="col-md-3">
 
-    </div>
+                    <div class="plan-metric plan-metric-total">
 
-    <div class="col-md-4">
+                        <div class="plan-metric-label">
+                            Total Lower Cases
+                        </div>
 
-        <label class="form-label">
-            Account Number
-        </label>
+                        <div class="plan-metric-value">
+                            <span id="casesLowerTotal">0</span>
+                        </div>
 
-        <input
-            type="text"
-            id="mobileNumber"
-            name="mobile_number"
-            class="form-control"
-            placeholder="+8801XXXXXXXXX">
+                    </div>
 
-    </div>
+                </div>
 
-    <div class="col-md-4">
+                <div class="col-md-3">
 
-        <label class="form-label">
-            Transaction ID
-        </label>
+                    <div class="plan-metric plan-metric-total">
 
-        <input
-            type="text"
-            id="transactionId"
-            name="transaction_id"
-            class="form-control">
+                        <div class="plan-metric-label">
+                            Remaining Upper
+                        </div>
 
-    </div>
+                        <div class="plan-metric-value">
+                            <span id="casesUpperRemaining">0</span>
+                        </div>
 
-    </div>
-    
+                    </div>
 
-    <hr>
+                </div>
 
-    <!-- Cases Summary (from patient Upper/Lower cases) -->
-    <div class="row g-3 mb-3">
-      <div class="col-12">
-        <div class="d-flex flex-wrap gap-3">
-          <div class="plan-metric plan-metric-total">
-            <div class="plan-metric-label">Total Upper Cases</div>
-            <div class="plan-metric-value"><span id="casesUpperTotal">0</span></div>
-          </div>
-          <div class="plan-metric plan-metric-total">
-            <div class="plan-metric-label">Total Lower Cases</div>
-            <div class="plan-metric-value"><span id="casesLowerTotal">0</span></div>
-          </div>
+                <div class="col-md-3">
+
+                    <div class="plan-metric plan-metric-total">
+
+                        <div class="plan-metric-label">
+                            Remaining Lower
+                        </div>
+
+                        <div class="plan-metric-value">
+                            <span id="casesLowerRemaining">0</span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            {{-- Existing + New deliveries --}}
+            <div id="deliveriesContainer"></div>
+
         </div>
-      </div>
+
     </div>
 
-    <!-- Deliveries -->
-    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-      <h6 class="mb-0">Delivery</h6>
-      <div class="d-flex gap-2">
-        <span id="caseClosedBadge" class="badge bg-dark d-none align-self-center">Case Closed</span>
-        <button id="btnNewDelivery" type="button" class="btn btn-outline-primary btn-sm">
-          <i class="fas fa-plus me-1"></i>New Delivery
-        </button>
-        <button id="btnDone" type="button" class="btn btn-success btn-sm d-none">
-          <i class="fas fa-check me-1"></i>Done
-        </button>
-      </div>
-    </div>
-    <div id="deliveriesContainer" class="mb-3"></div>
 
-    <!-- Remaining cases + Due -->
-    <div class="row g-3">
-      <div class="col-md-4">
-        <div class="plan-metric plan-metric-total">
-          <div class="plan-metric-label">Remaining Upper Cases</div>
-          <div class="plan-metric-value"><span id="casesUpperRemaining">0</span></div>
+    {{-- =========================================================
+         STEP 5 — PAYMENT HISTORY
+    ========================================================== --}}
+    <div
+        id="historySection"
+        class="card mb-4 d-none"
+    >
+
+        <div class="payment-header px-3 py-3">
+
+            <h5>
+                <i class="fas fa-history me-2"></i>
+                Payment History
+            </h5>
+
         </div>
-      </div>
-      <div class="col-md-4">
-        <div class="plan-metric plan-metric-total">
-          <div class="plan-metric-label">Remaining Lower Cases</div>
-          <div class="plan-metric-value"><span id="casesLowerRemaining">0</span></div>
+
+        <div class="card-body p-0">
+
+            <div class="table-responsive">
+
+                <table
+                    class="table table-hover align-middle mb-0"
+                    id="historyTable"
+                >
+
+                    <thead class="table-light">
+
+                        <tr>
+
+                            <th class="px-4">
+                                Date
+                            </th>
+
+                            <th>
+                                Payment Method
+                            </th>
+
+                            <th>
+                                Details
+                            </th>
+
+                            <th class="text-end px-4">
+                                Amount
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <div
+                id="emptyHistory"
+                class="empty-history d-none"
+            >
+                <i class="fas fa-receipt fa-2x mb-2 opacity-50"></i>
+
+                <div>
+                    No payments recorded yet.
+                </div>
+            </div>
+
         </div>
-      </div>
-      <div class="col-md-4">
-        <div class="plan-metric plan-metric-due">
-          <div class="plan-metric-label">Due Amount</div>
-          <div class="plan-metric-value">BDT <span id="remaining">0.00</span></div>
-        </div>
-      </div>
+
     </div>
 
-    <hr>
 
-    <h6>Payment History</h6>
-    <div class="table-responsive">
-      <table class="table table-bordered align-middle" id="historyTable">
-        <thead>
-        <tr>
-          <th style="width: 150px">Date</th>
-          <th style="width: 150px">Method</th>
-          <th>Amount</th>
-        </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
 </div>
+
+
+{{-- =============================================================
+     JAVASCRIPT STARTS HERE
+============================================================= --}}
 
 @push('scripts')
 <script>
-(function(){
-  const routeFind = "{{ route('admin.payments.plan.find-patient', ['predict3dId' => 'PREDICT_ID']) }}";
-  const routeGet = "{{ route('admin.payments.plan.get', ['predict3dId' => 'PREDICT_ID']) }}";
-  const routeSave = "{{ route('admin.payments.plan.save', ['predict3dId' => 'PREDICT_ID']) }}";
-  const routeSaveInstallment = "{{ route('admin.payments.plan.add-installment', ['predict3dId' => 'PREDICT_ID']) }}";
-  const routeAddDelivery = "{{ route('admin.payments.plan.add-delivery', ['predict3dId' => 'PREDICT_ID']) }}";
-  const routeDone = "{{ route('admin.payments.plan.done', ['predict3dId' => 'PREDICT_ID']) }}";
-  const routeUpdateTotal = "{{ route('admin.payments.plan.update-total', ['predict3dId' => 'PREDICT_ID']) }}";
+(function () {
 
-  const $predict = document.getElementById('predictId');
-  const $btnFetch = document.getElementById('btnFetch');
-  const urlParams = new URLSearchParams(window.location.search);
+    'use strict';
 
-  const predictId = urlParams.get("predict3d_id");
+    /* =========================================================
+       ROUTES
+    ========================================================= */
 
-  if (predictId) {
+    const routeFind =
+        "{{ route('admin.payments.plan.find-patient', ['predict3dId' => 'PREDICT_ID']) }}";
 
-      $predict.value = predictId;
+    const routeGet =
+        "{{ route('admin.payments.plan.get', ['predict3dId' => 'PREDICT_ID']) }}";
 
-      window.addEventListener("load", function () {
+    const routeSave =
+        "{{ route('admin.payments.plan.save', ['predict3dId' => 'PREDICT_ID']) }}";
 
-          $btnFetch.click();
+    const routeAddDelivery =
+        "{{ route('admin.payments.plan.add-delivery', ['predict3dId' => 'PREDICT_ID']) }}";
 
-      });
+    const routeDone =
+        "{{ route('admin.payments.plan.done', ['predict3dId' => 'PREDICT_ID']) }}";
 
-  }
-  const $summary = document.getElementById('patientSummary'); // legacy inline summary (kept but unused)
-  const $infoSection = document.getElementById('patientInfoSection');
-  const $infoBody = document.getElementById('patientInfoBody');
-  const $planCard = document.getElementById('planCard');
-  const $remaining = document.getElementById('remaining');
-  const $history = document.querySelector('#historyTable tbody');
-  const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-  // Summary badges
-  const $sumTotal = document.getElementById('sumTotal');
-  const $sumPaid = document.getElementById('sumPaid');
-  const $sumRemaining = document.getElementById('sumRemaining');
-
-  // Cases + deliveries
-  const $casesUpperTotal = document.getElementById('casesUpperTotal');
-  const $casesLowerTotal = document.getElementById('casesLowerTotal');
-  const $casesUpperRemaining = document.getElementById('casesUpperRemaining');
-  const $casesLowerRemaining = document.getElementById('casesLowerRemaining');
-  const $deliveriesContainer = document.getElementById('deliveriesContainer');
-  const $btnNewDelivery = document.getElementById('btnNewDelivery');
-  const $btnDone = document.getElementById('btnDone');
-  const $caseClosedBadge = document.getElementById('caseClosedBadge');
-
-  const $pmRadios = document.querySelectorAll('input[name="paymentMethod"]');
-  const $ptFull = document.getElementById('ptFull');
-  const $ptInstall = document.getElementById('ptInstallment');
-  const $totalAmount = document.getElementById('totalAmount');
-  const $btnEditTotal = document.getElementById('btnEditTotal');
-  const $btnSaveTotal = document.getElementById('btnSaveTotal');
-
-  const bankSection = document.getElementById("bankTransferSection");
-
-  const bankSelect = document.getElementById("bankName");
-
-  const branchSelect = document.getElementById("branchName");
-
-  const accountName = document.getElementById("accountName");
-
-  const accountNumber = document.getElementById("accountNumber");
-  let currentPredict = '';
-  let totalLocked = false;
-  let caseClosed = false;
-  let casesState = { total_upper: 0, total_lower: 0, delivered_upper: 0, delivered_lower: 0, remaining_upper: 0, remaining_lower: 0 };
-  let loadedBranches = [];
-
-  function selectedMethod(){
-    for(const r of $pmRadios){ if(r.checked) return r.value; }
-    return 'cash';
-  }
-
-  function toggleBankTransfer() {
-
-    if (selectedMethod() === "bank_transfer") {
-
-        bankSection.classList.remove("d-none");
-
-        mobileSection.classList.add("d-none");
-
-        bankSelect.disabled = false;
-
-    } else {
-
-        bankSection.classList.add("d-none");
-
-        bankSelect.value = "";
-
-        branchSelect.innerHTML =
-        '<option value="">Select Branch</option>';
-
-        branchSelect.disabled = true;
-
-        accountName.value = "";
-        accountNumber.value = "";
-
-        accountName.disabled = true;
-        accountNumber.disabled = true;
-
-    }
-
-}
+    const routeUpdateTotal =
+        "{{ route('admin.payments.plan.update-total', ['predict3dId' => 'PREDICT_ID']) }}";
 
 
+    /* =========================================================
+       DOM ELEMENTS
+    ========================================================= */
 
-// Bank Transfer
-const btnSaveBank = document.getElementById('btnSaveBank');
+    const $predict =
+        document.getElementById('predictId');
 
-async function loadBanks(selectedBankId = null) {
+    const $btnFetch =
+        document.getElementById('btnFetch');
 
-    const response = await fetch("{{ route('admin.banks.index') }}");
+    const $patientInfoSection =
+        document.getElementById('patientInfoSection');
 
-    const banks = await response.json();
+    const $patientInfoBody =
+        document.getElementById('patientInfoBody');
 
-    const bankSelect = document.getElementById('bankName');
+    const $planCard =
+        document.getElementById('planCard');
 
-    bankSelect.innerHTML = '<option value="">Select Bank</option>';
+    const $deliverySection =
+        document.getElementById('deliverySection');
 
-    banks.forEach(function(bank){
+    const $historySection =
+        document.getElementById('historySection');
 
-        const option = document.createElement('option');
+    const $history =
+        document.querySelector('#historyTable tbody');
 
-        option.value = bank.id;
-        option.text = bank.bank_name;
+    const $emptyHistory =
+        document.getElementById('emptyHistory');
 
-        if(selectedBankId && bank.id == selectedBankId){
-            option.selected = true;
+    const $deliveriesContainer =
+        document.getElementById('deliveriesContainer');
+
+    const $btnNewDelivery =
+        document.getElementById('btnNewDelivery');
+
+    const $btnDone =
+        document.getElementById('btnDone');
+
+    const $caseClosedBadge =
+        document.getElementById('caseClosedBadge');
+
+    const $totalAmount =
+        document.getElementById('totalAmount');
+
+    const $btnSavePlan =
+        document.getElementById('btnSavePlan');
+
+    const $btnEditTotal =
+        document.getElementById('btnEditTotal');
+
+    const $btnSaveTotal =
+        document.getElementById('btnSaveTotal');
+
+    const $ptFull =
+        document.getElementById('ptFull');
+
+    const $ptInstallment =
+        document.getElementById('ptInstallment');
+
+    const $sumTotal =
+        document.getElementById('sumTotal');
+
+    const $sumPaid =
+        document.getElementById('sumPaid');
+
+    const $sumRemaining =
+        document.getElementById('sumRemaining');
+
+    const $casesUpperTotal =
+        document.getElementById('casesUpperTotal');
+
+    const $casesLowerTotal =
+        document.getElementById('casesLowerTotal');
+
+    const $casesUpperRemaining =
+        document.getElementById('casesUpperRemaining');
+
+    const $casesLowerRemaining =
+        document.getElementById('casesLowerRemaining');
+
+    const $planStatus =
+        document.getElementById('planStatus');
+
+    const $planStatusText =
+        document.getElementById('planStatusText');
+
+    const csrf =
+        document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+
+    /* =========================================================
+       STATE
+    ========================================================= */
+
+    let currentPredict = '';
+
+    let hasSavedPlan = false;
+
+    let caseClosed = false;
+
+    let casesState = {
+        total_upper: 0,
+        total_lower: 0,
+        delivered_upper: 0,
+        delivered_lower: 0,
+        remaining_upper: 0,
+        remaining_lower: 0
+    };
+
+
+    /* =========================================================
+       HELPERS
+    ========================================================= */
+
+    function escapeHtml(value) {
+
+        if (value === null || value === undefined) {
+            return '';
         }
 
-        bankSelect.appendChild(option);
-
-    });
-
-}
-
-btnSaveBank.addEventListener('click', async function () {
-
-    const bankName = document.getElementById('newBankName').value.trim();
-
-    if(bankName === ''){
-        alert('Please enter Bank Name');
-        return;
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 
-    try{
 
-        const response = await fetch("{{ route('admin.banks.store') }}",{
+    function fmtDate(value) {
 
-            method:'POST',
-
-            headers:{
-                'Content-Type':'application/json',
-                'Accept':'application/json',
-                'X-CSRF-TOKEN':'{{ csrf_token() }}'
-            },
-
-            body:JSON.stringify({
-                bank_name:bankName
-            })
-
-        });
-
-        const bank = await response.json();
-        console.log(bank);
-
-        const option = document.createElement('option');
-
-        option.value = bank.id;
-        option.text = bank.bank_name;
-        option.selected = true;
-
-        document.getElementById('bankName').appendChild(option);
-        await loadBanks(bank.id);
-
-        bootstrap.Modal.getInstance(document.getElementById('addBankModal')).hide();
-
-        document.getElementById('newBankName').value='';
-
-    }catch(e){
-
-        alert('Failed to save bank');
-
-        console.log(e);
-
-    }
-
-});
-
-loadBanks();
-
-// Save Branch
-const btnSaveBranch = document.getElementById('btnSaveBranch');
-
-btnSaveBranch.addEventListener('click', async function () {
-
-    const bankId = document.getElementById('bankName').value;
-    const branchName = document.getElementById('newBranchName').value.trim();
-
-    if (bankId === '') {
-        alert('Please select a bank first.');
-        return;
-    }
-
-    if (branchName === '') {
-        alert('Please enter Branch Name.');
-        return;
-    }
-
-    try {
-
-        const response = await fetch("{{ route('admin.bank-branches.store') }}", {
-
-            method: 'POST',
-
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-
-            body: JSON.stringify({
-                bank_id: bankId,
-                branch_name: branchName
-            })
-
-        });
-
-        const branch = await response.json();
-
-        console.log(branch);
-
-        const option = document.createElement('option');
-
-        option.value = branch.id;
-        option.text = branch.branch_name;
-        option.selected = true;
-
-        document.getElementById('branchName').appendChild(option);
-
-        document.getElementById('branchName').disabled = false;
-
-        bootstrap.Modal.getInstance(
-            document.getElementById('addBranchModal')
-        ).hide();
-
-        document.getElementById('newBranchName').value = '';
-
-        accountName.disabled = false;
-        accountNumber.disabled = false;
-
-    } catch (e) {
-
-        console.log(e);
-
-        alert('Failed to save branch.');
-
-    }
-
-});
-
-
-
-  const mobileSection = document.getElementById("mobileBankingSection");
-
-function toggleMobileBanking() {
-
-    if (selectedMethod() === "mobile_banking") {
-
-        mobileSection.classList.remove("d-none");
-
-        bankSection.classList.add("d-none");
-
-    } else {
-
-        mobileSection.classList.add("d-none");
-
-    }
-
-  }
-
-  function recalcSummaryFromInput() {
-    const total = parseFloat($totalAmount.value || '0') || 0;
-    const paid = parseFloat($sumPaid.textContent || '0') || 0;
-    const due = Math.max(0, total - paid);
-    $sumTotal.textContent = total.toFixed(2);
-    $sumRemaining.textContent = due.toFixed(2);
-    $remaining.textContent = due.toFixed(2);
-    renderCases();
-  }
-
-  function togglePlanType(){ /* deliveries UI is used for both types */ }
-  document.querySelectorAll('input[name="planType"]').forEach(r => r.addEventListener('change', togglePlanType));
-
- $pmRadios.forEach(r => {
-
-    r.addEventListener("change", () => {
-
-        toggleBankTransfer();
-        toggleMobileBanking();
-
-    });
-
-  });
-
-  bankSelect.addEventListener("change", async function () {
-
-      branchSelect.innerHTML =
-          '<option value="">Select Branch</option>';
-
-      accountName.value = '';
-      accountNumber.value = '';
-
-      accountName.disabled = true;
-      accountNumber.disabled = true;
-
-      loadedBranches = [];
-
-      if (this.value === '') {
-          branchSelect.disabled = true;
-          return;
-      }
-
-      try {
-
-          const response = await fetch(
-              '/admin/banks/' + this.value + '/branches'
-          );
-
-          if (!response.ok) {
-              throw new Error('Failed to load branches.');
-          }
-
-          loadedBranches = await response.json();
-
-          loadedBranches.forEach(function (branch) {
-
-              const option = document.createElement('option');
-
-              option.value = branch.id;
-
-              option.text = branch.branch_name;
-
-              branchSelect.appendChild(option);
-
-          });
-
-          branchSelect.disabled = false;
-
-      } catch (e) {
-
-          console.error(e);
-
-          alert('Failed to load branches.');
-
-          branchSelect.disabled = true;
-      }
-
-  });
-
-
-  branchSelect.addEventListener("change", function () {
-
-    const branchId = this.value;
-
-    accountName.value = '';
-    accountNumber.value = '';
-
-    accountName.disabled = true;
-    accountNumber.disabled = true;
-
-    if (branchId === '') {
-        return;
-    }
-
-    const branch = loadedBranches.find(
-        item => String(item.id) === String(branchId)
-    );
-
-    if (!branch) {
-        return;
-    }
-
-    // Automatically load saved account information
-    accountName.value = branch.account_name || '';
-    accountNumber.value = branch.account_number || '';
-
-    // Allow editing
-    accountName.disabled = false;
-    accountNumber.disabled = false;
-
-});
-
-  
-  function renderCases() {
-    if ($casesUpperTotal) $casesUpperTotal.textContent = String(casesState.total_upper ?? 0);
-    if ($casesLowerTotal) $casesLowerTotal.textContent = String(casesState.total_lower ?? 0);
-    if ($casesUpperRemaining) $casesUpperRemaining.textContent = String(casesState.remaining_upper ?? 0);
-    if ($casesLowerRemaining) $casesLowerRemaining.textContent = String(casesState.remaining_lower ?? 0);
-
-    const due = parseFloat($sumRemaining.textContent || '0') || 0;
-    const done = (casesState.remaining_upper === 0 && casesState.remaining_lower === 0 && due === 0);
-    if ($btnDone) $btnDone.classList.toggle('d-none', caseClosed);
-  }
-
-  function applyLockState(isClosed) {
-    caseClosed = !!isClosed;
-    if ($caseClosedBadge) $caseClosedBadge.classList.toggle('d-none', !caseClosed);
-
-    // Disable editing controls
-    if ($totalAmount) $totalAmount.disabled = caseClosed || $totalAmount.disabled;
-    if ($btnEditTotal) $btnEditTotal.classList.toggle('d-none', caseClosed);
-    if ($btnSaveTotal) $btnSaveTotal.classList.add('d-none');
-    if ($btnNewDelivery) $btnNewDelivery.classList.toggle('d-none', caseClosed);
-
-    if ($pmRadios) $pmRadios.forEach(r => r.disabled = caseClosed);
-    if ($ptFull) $ptFull.disabled = caseClosed;
-    if ($ptInstall) $ptInstall.disabled = caseClosed;
-
-    if (caseClosed && $deliveriesContainer) {
-      $deliveriesContainer.querySelectorAll('[data-delivery-draft="1"]').forEach(el => el.remove());
-    }
-    renderCases();
-  }
-
-  function deliveryTemplate(idx) {
-    const today = "{{ date('Y-m-d') }}";
-    return `
-      <div class="card mb-2" data-delivery-draft="1">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-            <div class="fw-semibold">Delivered</div>
-            <div class="text-muted small">Delivery #${idx}</div>
-          </div>
-          <div class="row g-3 align-items-end">
-            <div class="col-md-2">
-              <label class="form-label">Upper cases</label>
-              <input type="number" min="0" step="1" class="form-control js-upper" value="0">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Lower cases</label>
-              <input type="number" min="0" step="1" class="form-control js-lower" value="0">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Paid amount</label>
-              <div class="input-group">
-                <span class="input-group-text">BDT </span>
-                <input type="number" min="0" step="0.01" class="form-control js-paid" value="0.00">
-              </div>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Delivery date</label>
-              <input type="date" class="form-control js-date" value="${today}">
-            </div>
-            <div class="col-md-2 d-flex flex-column gap-2">
-                <button type="button" class="btn btn-success w-100 js-save">
-                    <i class="fas fa-save me-1"></i>Save
-                </button>
-
-                <button type="button" class="btn btn-outline-secondary w-100 js-cancel">
-                    <i class="fas fa-times me-1"></i>Cancel
-                </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  function addNewDeliveryDraft() {
-    if (!$deliveriesContainer) return;
-    const count = $deliveriesContainer.querySelectorAll('[data-delivery-draft="1"]').length + 1;
-    $deliveriesContainer.insertAdjacentHTML('beforeend', deliveryTemplate(count));
-  }
-
-  if ($btnNewDelivery) {
-    $btnNewDelivery.addEventListener('click', () => {
-      if (!currentPredict) { alert('Fetch a patient first'); return; }
-      addNewDeliveryDraft();
-    });
-  }
-
-  if ($btnDone) {
-    $btnDone.addEventListener('click', async () => {
-      if (!currentPredict) { alert('Fetch a patient first'); return; }
-      if (!confirm('Are you sure you want to mark this case as done?')) return;
-      $btnDone.disabled = true;
-      try {
-        const url = routeDone.replace('PREDICT_ID', encodeURIComponent(currentPredict));
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
-        });
-        const contentType = res.headers.get('content-type') || '';
-        if (!res.ok) {
-          let msg = 'Failed to mark case done';
-          if (contentType.includes('application/json')) {
-            const j = await res.json();
-            msg = j.message || msg;
-          } else {
-            msg = await res.text() || msg;
-          }
-          throw new Error(msg);
+        if (!value) {
+            return '';
         }
-        alert('Case marked as done successfully.');
-        applyLockState(true);
-      } catch (err) {
-        alert(err.message || 'Error marking done');
-      } finally {
-        $btnDone.disabled = false;
-      }
-    });
-  }
 
-  function computeAge(iso){
-    if(!iso) return '';
-    const d = new Date(iso); if(Number.isNaN(d.getTime())) return '';
-    const years = Math.floor((Date.now()-d.getTime())/(365.25*24*60*60*1000));
-    return years>0 ? years+" years" : '';
-  }
+        const d = new Date(value);
 
-  function fmtDate(val){
-    if(!val) return '';
-    const d = new Date(val);
-    if(Number.isNaN(d.getTime())) return String(val);
-    const y = d.getFullYear();
-    const m = String(d.getMonth()+1).padStart(2,'0');
-    const day = String(d.getDate()).padStart(2,'0');
-    return `${y}-${m}-${day}`;
-  }
+        if (Number.isNaN(d.getTime())) {
+            return String(value);
+        }
 
-  function fmtMethod(val){
-    if(!val) return '';
-    return String(val).replace(/_/g,' ').replace(/^./, c => c.toUpperCase());
-  }
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
 
-  $btnFetch.addEventListener('click', async () => {
-    const id = ($predict.value||'').trim();
-    if(!id){ alert('Enter Predict3DId'); return; }
-    $summary && $summary.classList.add('d-none');
-    $infoSection.classList.add('d-none');
-    $history.innerHTML='';
-    try{
-      const urlP = routeFind.replace('PREDICT_ID', encodeURIComponent(id));
-      const resP = await fetch(urlP, { headers: { 'Accept': 'application/json' } });
-      if(!resP.ok) throw new Error('Patient not found');
-      const p = await resP.json();
-      const age = computeAge(p.DateOfBirth);
-      const scanningFor = (p.ScanningFor === 'Others' && p.ScanningForOthers) ? `${p.ScanningFor} (${p.ScanningForOthers})` : (p.ScanningFor || '');
-      $infoBody.innerHTML = `
-        <div class="row g-3">
-          <div class="col-md-6">
-            <div class="d-flex align-items-center"><span class="fw-semibold me-2">Patient Name:</span><span>${p.FullName ?? ''}</span></div>
-            <div class="d-flex align-items-center"><span class="fw-semibold me-2">Doctor Name:</span><span>${p.DoctorName ?? ''}</span></div>
-            <div class="d-flex align-items-center"><span class="fw-semibold me-2">Scanning For:</span><span>${scanningFor}</span></div>
-          </div>
-          <div class="col-md-6">
-            <div class="d-flex align-items-center"><span class="fw-semibold me-2">Gender:</span><span>${p.Gender ?? ''}</span></div>
-            <div class="d-flex align-items-center"><span class="fw-semibold me-2">Age:</span><span>${age}</span></div>
-            <div class="d-flex align-items-center"><span class="fw-semibold me-2">Phone Number:</span><span>${p.PhoneNumber ?? ''}</span></div>
-          </div>
-        </div>
-        <hr class="my-3"/>
-        <div class="small text-muted">3D Predict ID: <span class="fw-semibold">${p.Predict3DId}</span></div>`;
-      $infoSection.classList.remove('d-none');
-      currentPredict = id;
+        return `${y}-${m}-${day}`;
+    }
 
-      // Show plan UI immediately with defaults; fill actual data after we fetch plan
-      $planCard.classList.remove('d-none');
-      $totalAmount.disabled = false; $totalAmount.value = '';
-      applyLockState(false);
-      $ptFull.checked = true; togglePlanType();
-      $remaining.textContent = '0.00';
-      $sumTotal.textContent = '0.00';
-      $sumPaid.textContent = '0.00';
-      $sumRemaining.textContent = '0.00';
-      recalcSummaryFromInput();
 
-      const urlG = routeGet.replace('PREDICT_ID', encodeURIComponent(id));
-      const resG = await fetch(urlG, { headers: { 'Accept': 'application/json' } });
-      if(resG.ok){
-        const data = await resG.json();
-        const plan = data.plan || null;
-        const pays = data.payments || [];
-        const deliveries = data.deliveries || [];
-        casesState = data.cases || casesState;
-        const paid = parseFloat(data.paid || 0);
-        const remaining = plan ? (parseFloat(plan.total_amount) - paid) : 0;
-        $remaining.textContent = (remaining||0).toFixed(2);
-        $history.innerHTML = pays.map(x=>`<tr><td>${fmtDate(x.payment_date)}</td><td>${fmtMethod(x.payment_method)}</td><td>BDT ${parseFloat(x.amount).toFixed(2)}</td></tr>`).join('');
-        // Update badges
-        $sumTotal.textContent = plan ? parseFloat(plan.total_amount).toFixed(2) : '0.00';
-        $sumPaid.textContent = (paid||0).toFixed(2);
-        $sumRemaining.textContent = (remaining||0).toFixed(2);
-        if ($deliveriesContainer) {
-          $deliveriesContainer.innerHTML = '';
-          deliveries.forEach((d, i) => {
-            $deliveriesContainer.insertAdjacentHTML('beforeend', `
-              <div class="card mb-2">
-                <div class="card-body">
-                  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-                    <div class="fw-semibold">Delivered</div>
-                    <div class="text-muted small">Delivery #${i + 1} · ${fmtDate(d.delivery_date)}</div>
-                  </div>
-                  <div class="row g-3">
-                    <div class="col-md-3"><div class="small text-muted">Upper delivered</div><div class="fw-semibold">${parseInt(d.upper_delivered || 0, 10)}</div></div>
-                    <div class="col-md-3"><div class="small text-muted">Lower delivered</div><div class="fw-semibold">${parseInt(d.lower_delivered || 0, 10)}</div></div>
-                    <div class="col-md-3"><div class="small text-muted">Paid</div><div class="fw-semibold">BDT ${parseFloat(d.paid_amount || 0).toFixed(2)}</div></div>
-                    <div class="col-md-3"><div class="small text-muted">Date</div><div class="fw-semibold">${fmtDate(d.delivery_date)}</div></div>
-                  </div>
+    function fmtMethod(value) {
+
+        if (!value) {
+            return 'Unknown';
+        }
+
+        return String(value)
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+
+    function computeAge(iso) {
+
+        if (!iso) {
+            return '';
+        }
+
+        const d = new Date(iso);
+
+        if (Number.isNaN(d.getTime())) {
+            return '';
+        }
+
+        const years = Math.floor(
+            (Date.now() - d.getTime()) /
+            (365.25 * 24 * 60 * 60 * 1000)
+        );
+
+        return years >= 0 ? `${years} years` : '';
+    }
+
+
+    function showPlanStatus(message, type = 'success') {
+
+        if (!$planStatus) {
+            return;
+        }
+
+        $planStatus.className =
+            `alert alert-${type} mt-4 mb-0`;
+
+        $planStatusText.textContent = message;
+
+        $planStatus.classList.remove('d-none');
+    }
+
+
+    function hidePlanStatus() {
+
+        if ($planStatus) {
+            $planStatus.classList.add('d-none');
+        }
+    }
+
+
+    function recalcSummary() {
+
+        const total =
+            parseFloat($totalAmount?.value || '0') || 0;
+
+        const paid =
+            parseFloat($sumPaid?.textContent || '0') || 0;
+
+        const due =
+            Math.max(0, total - paid);
+
+        if ($sumTotal) {
+            $sumTotal.textContent =
+                total.toFixed(2);
+        }
+
+        if ($sumRemaining) {
+            $sumRemaining.textContent =
+                due.toFixed(2);
+        }
+    }
+
+
+    function renderCases() {
+
+        if ($casesUpperTotal) {
+            $casesUpperTotal.textContent =
+                String(casesState.total_upper || 0);
+        }
+
+        if ($casesLowerTotal) {
+            $casesLowerTotal.textContent =
+                String(casesState.total_lower || 0);
+        }
+
+        if ($casesUpperRemaining) {
+            $casesUpperRemaining.textContent =
+                String(casesState.remaining_upper || 0);
+        }
+
+        if ($casesLowerRemaining) {
+            $casesLowerRemaining.textContent =
+                String(casesState.remaining_lower || 0);
+        }
+    }
+
+
+    /* =========================================================
+       PAYMENT HISTORY DETAILS
+    ========================================================= */
+
+    function paymentDetails(payment) {
+
+        const method =
+            String(payment.payment_method || '');
+
+        if (method === 'cash' || method === 'card') {
+
+            return `
+                <span class="text-muted small">
+                    <i class="fas fa-minus me-1"></i>
+                    No additional details
+                </span>
+            `;
+        }
+
+
+        if (method === 'bank_transfer') {
+
+            const bank =
+                escapeHtml(payment.bank_name || '');
+
+            const branch =
+                escapeHtml(payment.branch_name || '');
+
+            const accountName =
+                escapeHtml(payment.account_name || '');
+
+            const accountNumber =
+                escapeHtml(payment.account_number || '');
+
+            return `
+                <div class="small">
+
+                    ${
+                        bank || branch
+                            ? `
+                                <div class="fw-semibold">
+                                    <i class="fas fa-university text-primary me-1"></i>
+                                    ${bank || 'Bank'}
+
+                                    ${
+                                        branch
+                                            ? `<span class="text-muted">
+                                                • ${branch}
+                                               </span>`
+                                            : ''
+                                    }
+                                </div>
+                              `
+                            : ''
+                    }
+
+                    ${
+                        accountName
+                            ? `
+                                <div class="text-muted mt-1">
+                                    <i class="fas fa-user me-1"></i>
+                                    ${accountName}
+                                </div>
+                              `
+                            : ''
+                    }
+
+                    ${
+                        accountNumber
+                            ? `
+                                <div class="text-muted">
+                                    <i class="fas fa-credit-card me-1"></i>
+                                    ${accountNumber}
+                                </div>
+                              `
+                            : ''
+                    }
+
+                    ${
+                        !bank &&
+                        !branch &&
+                        !accountName &&
+                        !accountNumber
+                            ? `
+                                <span class="text-muted">
+                                    No bank details
+                                </span>
+                              `
+                            : ''
+                    }
+
                 </div>
-              </div>
-            `);
-          });
-          renderCases();
-          addNewDeliveryDraft();
+            `;
         }
-        // Ensure patient info stays visible
-        $infoSection.classList.remove('d-none');
-        if(plan){
-          $planCard.classList.remove('d-none');
-          $totalAmount.value = parseFloat(plan.total_amount).toFixed(2);
-          totalLocked = true; $totalAmount.disabled = true;
-          ($pmRadios.forEach(r=> r.checked = (r.value===plan.payment_method)));
-          if(plan.is_installment){ $ptInstall.checked = true; } else { $ptFull.checked = true; }
-          togglePlanType();
-          applyLockState(!!plan.is_closed);
-        } else {
-          $planCard.classList.remove('d-none');
-          totalLocked = false; $totalAmount.disabled = false; $totalAmount.value = '';
-          recalcSummaryFromInput();
-          $ptFull.checked = true; togglePlanType();
-          applyLockState(false);
+
+
+        if (method === 'mobile_banking') {
+
+            const provider =
+                escapeHtml(payment.mobile_provider || '');
+
+            const mobileNumber =
+                escapeHtml(
+                    payment.account_number ||
+                    payment.mobile_number ||
+                    ''
+                );
+
+            const transactionId =
+                escapeHtml(payment.transaction_id || '');
+
+            return `
+                <div class="small">
+
+                    ${
+                        provider
+                            ? `
+                                <div class="fw-semibold">
+                                    <i class="fas fa-mobile-alt text-primary me-1"></i>
+                                    ${provider}
+                                </div>
+                              `
+                            : ''
+                    }
+
+                    ${
+                        mobileNumber
+                            ? `
+                                <div class="text-muted mt-1">
+                                    <i class="fas fa-phone me-1"></i>
+                                    ${mobileNumber}
+                                </div>
+                              `
+                            : ''
+                    }
+
+                    ${
+                        transactionId
+                            ? `
+                                <div class="text-muted">
+                                    <i class="fas fa-receipt me-1"></i>
+                                    TXN: ${transactionId}
+                                </div>
+                              `
+                            : ''
+                    }
+
+                </div>
+            `;
         }
-      } else {
-        // Keep patient info visible and allow creating a new plan
-        $infoSection.classList.remove('d-none');
-        $planCard.classList.remove('d-none');
-        $totalAmount.disabled = false; $totalAmount.value = '';
-        $ptFull.checked = true; togglePlanType();
-        $history.innerHTML = '';
-        $remaining.textContent = '0.00';
-        $sumTotal.textContent = '0.00';
-        $sumPaid.textContent = '0.00';
-        $sumRemaining.textContent = '0.00';
-        recalcSummaryFromInput();
-        if ($deliveriesContainer) { $deliveriesContainer.innerHTML = ''; renderCases(); addNewDeliveryDraft(); }
-        applyLockState(false);
-      }
-    }catch(e){
-      $summary.innerHTML = `<span class='text-danger'>${e.message||'Failed to fetch'}</span>`;
-      $summary.classList.remove('d-none');
-      // Keep patient info visible and show empty plan so user can proceed after re-fetch
-      $infoSection.classList.remove('d-none');
-      $planCard.classList.remove('d-none');
-      $totalAmount.disabled = false; $totalAmount.value = '';
-      $ptFull.checked = true; togglePlanType();
-      $history.innerHTML = '';
-      $remaining.textContent = '0.00';
-      $sumTotal.textContent = '0.00';
-      $sumPaid.textContent = '0.00';
-      $sumRemaining.textContent = '0.00';
-      recalcSummaryFromInput();
-      if ($deliveriesContainer) { $deliveriesContainer.innerHTML = ''; renderCases(); }
-      applyLockState(false);
-      currentPredict='';
+
+
+        return `
+            <span class="text-muted small">
+                No additional details
+            </span>
+        `;
     }
-  });
 
-  // Open detail directly when redirected from payments table
-  const qp = new URLSearchParams(window.location.search);
-  const qPredict = (qp.get('predict3d_id') || '').trim();
-  if (qPredict) {
-    $predict.value = qPredict;
-    $btnFetch.click();
-  }
 
-  $btnEditTotal.addEventListener('click', ()=>{
-    $totalAmount.disabled = false; $btnSaveTotal.classList.remove('d-none');
-  });
+    function renderHistory(payments) {
 
-  $totalAmount.addEventListener('input', recalcSummaryFromInput);
-  $totalAmount.addEventListener('change', recalcSummaryFromInput);
-
-  $btnSaveTotal.addEventListener('click', async ()=>{
-    if(!currentPredict){ alert('Fetch a patient first'); return; }
-    const amt = parseFloat($totalAmount.value);
-    if(Number.isNaN(amt) || amt<0){ alert('Enter a valid total'); return; }
-    try{
-      const url = routeUpdateTotal.replace('PREDICT_ID', encodeURIComponent(currentPredict));
-      const res = await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
-        body: JSON.stringify({ total_amount: amt })
-      });
-      const contentType = res.headers.get('content-type')||'';
-      if(!res.ok){
-        let msg = 'Failed to update total';
-        if(contentType.includes('application/json')){ const j = await res.json(); msg = j.message||msg; }
-        else { msg = await res.text() || msg; }
-        throw new Error(msg);
-      }
-      const data = await res.json();
-      $totalAmount.value = parseFloat(data.plan.total_amount).toFixed(2);
-      $totalAmount.disabled = true; $btnSaveTotal.classList.add('d-none');
-      // Refresh badges; remaining = total - already paid
-      const paidNow = Array.from($history.querySelectorAll('tr td:nth-child(3)')).reduce((s,td)=>{
-        const v = parseFloat((td.textContent||'').replace(/[^\d.\-]/g,''));
-        return s + (isNaN(v)?0:v);
-      },0);
-      $sumTotal.textContent = parseFloat(data.plan.total_amount||0).toFixed(2);
-      $sumPaid.textContent = paidNow.toFixed(2);
-      $sumRemaining.textContent = Math.max(0, parseFloat(data.plan.total_amount||0) - paidNow).toFixed(2);
-      alert('Total updated');
-    }catch(e){ alert(e.message||'Error updating total'); }
-  });
-
-  document.querySelectorAll('input[name="planType"]').forEach(r=>r.addEventListener('change', ()=>{
-    togglePlanType();
-  }));
-
-  // Save / Cancel a delivery
-  if ($deliveriesContainer) {
-    $deliveriesContainer.addEventListener('click', async (e) => {
-
-      // Cancel delivery draft
-      const cancelBtn = e.target.closest('.js-cancel');
-
-      if (cancelBtn) {
-        const card = cancelBtn.closest('[data-delivery-draft="1"]');
-        if (card) card.remove();
-        return;
-      }
-
-      // Save delivery
-      const btn = e.target.closest('.js-save');
-      if (!btn) return;
-
-      if (caseClosed) {
-        alert('This case is closed. No new delivery can be added.');
-        return;
-      }
-
-      if (!currentPredict) {
-        alert('Fetch a patient first');
-        return;
-      }
-
-      const card = btn.closest('[data-delivery-draft="1"]');
-      if (!card) return;
-
-      const upper = parseInt(card.querySelector('.js-upper').value || '0', 10) || 0;
-      const lower = parseInt(card.querySelector('.js-lower').value || '0', 10) || 0;
-      const paidAmt = parseFloat(card.querySelector('.js-paid').value || '0') || 0;
-      const date = card.querySelector('.js-date').value;
-
-      if (!date) {
-        alert('Select a delivery date');
-        return;
-      }
-
-      if (upper < 0 || lower < 0) {
-        alert('Cases must be 0 or greater');
-        return;
-      }
-
-      if (paidAmt < 0) {
-        alert('Paid amount must be 0 or greater');
-        return;
-      }
-
-      // Do not save an empty delivery.
-      // A delivery is valid when at least one case or a payment amount is entered.
-      if (upper === 0 && lower === 0 && paidAmt === 0) {
-        alert('Enter at least one delivered case or a paid amount.');
-        return;
-      }
-
-      const total = parseFloat($totalAmount.value || '0') || 0;
-      if (total <= 0) {
-        alert('Set Total Amount first');
-        return;
-      }
-
-      btn.disabled = true;
-
-      try {
-        const url = routeAddDelivery.replace('PREDICT_ID', encodeURIComponent(currentPredict));
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': csrf
-          },
-          body: JSON.stringify({
-            upper_delivered: upper,
-            lower_delivered: lower,
-            paid_amount: paidAmt,
-            delivery_date: date,
-            payment_method: selectedMethod(),
-            total_amount: parseFloat($totalAmount.value || '0') || 0,
-
-            bank_name: selectedMethod() === "bank_transfer"
-              ? bankSelect.options[bankSelect.selectedIndex]?.text.trim() || ''
-              : '',
-
-            branch_name: selectedMethod() === "bank_transfer"
-              ? branchSelect.options[branchSelect.selectedIndex]?.text.trim() || ''
-              : '',
-
-            account_name: selectedMethod() === "bank_transfer"
-              ? accountName.value.trim()
-              : '',
-
-            account_number: selectedMethod() === "mobile_banking"
-              ? document.getElementById("mobileNumber").value.trim()
-              : accountNumber.value.trim(),
-
-            mobile_provider: document.getElementById("mobileBank").value,
-            transaction_id: document.getElementById("transactionId").value
-          })
-        });
-
-        const contentType = res.headers.get('content-type') || '';
-
-        if (!res.ok) {
-          let msg = 'Failed to save delivery';
-
-          if (contentType.includes('application/json')) {
-            const j = await res.json();
-            msg = j.message || msg;
-          } else {
-            msg = await res.text() || msg;
-          }
-
-          throw new Error(msg);
+        if (!$history) {
+            return;
         }
 
-        const data = await res.json();
-        const plan = data.plan;
-        const pays = data.payments || [];
-        const deliveries = data.deliveries || [];
-        casesState = data.cases || casesState;
+        if (!payments || payments.length === 0) {
 
-        const paidNow = pays.reduce((s, x) => s + parseFloat(x.amount || 0), 0);
-        const remainingNow = Math.max(0, parseFloat(plan.total_amount || 0) - paidNow);
+            $history.innerHTML = '';
 
-        $remaining.textContent = remainingNow.toFixed(2);
-        $sumTotal.textContent = parseFloat(plan.total_amount || 0).toFixed(2);
-        $sumPaid.textContent = paidNow.toFixed(2);
-        $sumRemaining.textContent = remainingNow.toFixed(2);
+            if ($emptyHistory) {
+                $emptyHistory.classList.remove('d-none');
+            }
 
-        $history.innerHTML = pays.map(x =>
-          `<tr><td>${fmtDate(x.payment_date)}</td><td>${fmtMethod(x.payment_method)}</td><td>BDT ${parseFloat(x.amount).toFixed(2)}</td></tr>`
-        ).join('');
+            return;
+        }
+
+        if ($emptyHistory) {
+            $emptyHistory.classList.add('d-none');
+        }
+
+
+        $history.innerHTML =
+            payments.map(payment => {
+
+                const method =
+                    String(payment.payment_method || '');
+
+                let methodIcon =
+                    'fa-money-bill-wave';
+
+                let methodClass =
+                    'bg-success';
+
+
+                if (method === 'bank_transfer') {
+
+                    methodIcon =
+                        'fa-university';
+
+                    methodClass =
+                        'bg-primary';
+                }
+
+
+                if (method === 'mobile_banking') {
+
+                    methodIcon =
+                        'fa-mobile-alt';
+
+                    methodClass =
+                        'bg-info';
+                }
+
+
+                if (method === 'card') {
+
+                    methodIcon =
+                        'fa-credit-card';
+
+                    methodClass =
+                        'bg-warning text-dark';
+                }
+
+
+                return `
+                    <tr>
+
+                        <td class="px-4">
+                            <span class="fw-semibold">
+                                ${escapeHtml(
+                                    fmtDate(payment.payment_date)
+                                )}
+                            </span>
+                        </td>
+
+                        <td>
+                            <span class="badge ${methodClass} payment-badge px-3 py-2">
+                                <i class="fas ${methodIcon} me-1"></i>
+                                ${escapeHtml(fmtMethod(method))}
+                            </span>
+                        </td>
+
+                        <td>
+                            ${paymentDetails(payment)}
+                        </td>
+
+                        <td class="text-end px-4">
+
+                            <span class="fw-bold text-primary">
+                                BDT
+                                ${(
+                                    parseFloat(payment.amount || 0)
+                                ).toFixed(2)}
+                            </span>
+
+                        </td>
+
+                    </tr>
+                `;
+
+            }).join('');
+    }
+
+
+    /* =========================================================
+       EXISTING DELIVERY DISPLAY
+    ========================================================= */
+
+    function renderExistingDeliveries(deliveries) {
+
+        if (!$deliveriesContainer) {
+            return;
+        }
 
         $deliveriesContainer.innerHTML = '';
 
-        deliveries.forEach((d, i) => {
-          $deliveriesContainer.insertAdjacentHTML('beforeend', `
-            <div class="card mb-2">
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-                  <div class="fw-semibold">Delivered</div>
-                  <div class="text-muted small">Delivery #${i + 1} · ${fmtDate(d.delivery_date)}</div>
+
+        if (!deliveries || deliveries.length === 0) {
+
+            $deliveriesContainer.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-truck-loading fa-2x mb-2 opacity-50"></i>
+
+                    <div>
+                        No deliveries recorded yet.
+                    </div>
                 </div>
-                <div class="row g-3">
-                  <div class="col-md-3"><div class="small text-muted">Upper delivered</div><div class="fw-semibold">${parseInt(d.upper_delivered || 0, 10)}</div></div>
-                  <div class="col-md-3"><div class="small text-muted">Lower delivered</div><div class="fw-semibold">${parseInt(d.lower_delivered || 0, 10)}</div></div>
-                  <div class="col-md-3"><div class="small text-muted">Paid</div><div class="fw-semibold">BDT ${parseFloat(d.paid_amount || 0).toFixed(2)}</div></div>
-                  <div class="col-md-3"><div class="small text-muted">Date</div><div class="fw-semibold">${fmtDate(d.delivery_date)}</div></div>
+            `;
+
+            return;
+        }
+
+
+        deliveries.forEach((delivery, index) => {
+
+            const upper =
+                parseInt(
+                    delivery.upper_delivered || 0,
+                    10
+                );
+
+            const lower =
+                parseInt(
+                    delivery.lower_delivered || 0,
+                    10
+                );
+
+            const paid =
+                parseFloat(
+                    delivery.paid_amount || 0
+                );
+
+
+            $deliveriesContainer.insertAdjacentHTML(
+                'afterbegin',
+                `
+                <div class="delivery-card mb-3">
+
+                    <div class="delivery-header">
+
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+
+                            <div class="fw-semibold">
+
+                                <i class="fas fa-box-open text-primary me-2"></i>
+
+                                Delivery #${index + 1}
+
+                            </div>
+
+                            <div class="text-muted small">
+
+                                ${escapeHtml(
+                                    fmtDate(delivery.delivery_date)
+                                )}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="p-4">
+
+                        <div class="row g-4">
+
+                            <div class="col-md-3">
+
+                                <div class="small text-muted">
+                                    Upper delivered
+                                </div>
+
+                                <div class="fw-bold fs-5">
+                                    ${upper}
+                                </div>
+
+                            </div>
+
+
+                            <div class="col-md-3">
+
+                                <div class="small text-muted">
+                                    Lower delivered
+                                </div>
+
+                                <div class="fw-bold fs-5">
+                                    ${lower}
+                                </div>
+
+                            </div>
+
+
+                            <div class="col-md-3">
+
+                                <div class="small text-muted">
+                                    Paid
+                                </div>
+
+                                <div class="fw-bold fs-5">
+                                    BDT ${paid.toFixed(2)}
+                                </div>
+
+                            </div>
+
+
+                            <div class="col-md-3">
+
+                                <div class="small text-muted">
+                                    Date
+                                </div>
+
+                                <div class="fw-bold">
+                                    ${escapeHtml(
+                                        fmtDate(
+                                            delivery.delivery_date
+                                        )
+                                    )}
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
                 </div>
-              </div>
-            </div>
-          `);
+                `
+            );
         });
+    }
+
+
+    /* =========================================================
+       APPLY CASE CLOSED STATE
+    ========================================================= */
+
+    function applyLockState(isClosed) {
+
+        caseClosed = !!isClosed;
+
+
+        if ($caseClosedBadge) {
+
+            $caseClosedBadge.classList.toggle(
+                'd-none',
+                !caseClosed
+            );
+        }
+
+
+        if ($btnNewDelivery) {
+
+            $btnNewDelivery.classList.toggle(
+                'd-none',
+                caseClosed
+            );
+        }
+
+
+        if ($btnDone) {
+
+            $btnDone.classList.add('d-none');
+        }
+
+
+        if (caseClosed && $deliveriesContainer) {
+
+            $deliveriesContainer
+                .querySelectorAll(
+                    '[data-delivery-draft="1"]'
+                )
+                .forEach(card => card.remove());
+        }
+    }
+
+
+    /* =========================================================
+       SEARCH PATIENT
+    ========================================================= */
+
+    $btnFetch.addEventListener(
+        'click',
+        async function () {
+
+            const id =
+                ($predict.value || '').trim();
+
+
+            if (!id) {
+
+                alert('Please enter 3D Predict ID.');
+
+                $predict.focus();
+
+                return;
+            }
+
+
+            hidePlanStatus();
+
+
+            $patientInfoSection
+                .classList
+                .add('d-none');
+
+            $planCard
+                .classList
+                .add('d-none');
+
+            $deliverySection
+                .classList
+                .add('d-none');
+
+            $historySection
+                .classList
+                .add('d-none');
+
+
+            currentPredict = '';
+
+            hasSavedPlan = false;
+
+            caseClosed = false;
+
+
+            try {
+
+                /* -------------------------------------------------
+                   FIND PATIENT
+                ------------------------------------------------- */
+
+                const url =
+                    routeFind.replace(
+                        'PREDICT_ID',
+                        encodeURIComponent(id)
+                    );
+
+
+                const response =
+                    await fetch(url, {
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        'Patient not found.'
+                    );
+                }
+
+
+                const patient =
+                    await response.json();
+
+
+                const age =
+                    computeAge(
+                        patient.DateOfBirth
+                    );
+
+
+                const scanningFor =
+                    (
+                        patient.ScanningFor === 'Others' &&
+                        patient.ScanningForOthers
+                    )
+                        ? `${patient.ScanningFor} (${patient.ScanningForOthers})`
+                        : (
+                            patient.ScanningFor || ''
+                        );
+
+
+                /* -------------------------------------------------
+                   PATIENT INFORMATION
+                ------------------------------------------------- */
+
+                $patientInfoBody.innerHTML = `
+
+                    <div class="row g-4">
+
+                        <div class="col-md-6">
+
+                            <div class="mb-2">
+                                <span class="fw-semibold">
+                                    Patient Name:
+                                </span>
+
+                                <span class="ms-2">
+                                    ${escapeHtml(
+                                        patient.FullName || ''
+                                    )}
+                                </span>
+                            </div>
+
+                            <div class="mb-2">
+                                <span class="fw-semibold">
+                                    Doctor Name:
+                                </span>
+
+                                <span class="ms-2">
+                                    ${escapeHtml(
+                                        patient.DoctorName || ''
+                                    )}
+                                </span>
+                            </div>
+
+                            <div>
+                                <span class="fw-semibold">
+                                    Scanning For:
+                                </span>
+
+                                <span class="ms-2">
+                                    ${escapeHtml(
+                                        scanningFor
+                                    )}
+                                </span>
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <div class="mb-2">
+                                <span class="fw-semibold">
+                                    Gender:
+                                </span>
+
+                                <span class="ms-2">
+                                    ${escapeHtml(
+                                        patient.Gender || ''
+                                    )}
+                                </span>
+                            </div>
+
+                            <div class="mb-2">
+                                <span class="fw-semibold">
+                                    Age:
+                                </span>
+
+                                <span class="ms-2">
+                                    ${escapeHtml(age)}
+                                </span>
+                            </div>
+
+                            <div>
+                                <span class="fw-semibold">
+                                    Phone Number:
+                                </span>
+
+                                <span class="ms-2">
+                                    ${escapeHtml(
+                                        patient.PhoneNumber || ''
+                                    )}
+                                </span>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <hr class="my-3">
+
+                    <div class="small text-muted">
+
+                        3D Predict ID:
+
+                        <span class="fw-semibold text-dark">
+                            ${escapeHtml(
+                                patient.Predict3DId || id
+                            )}
+                        </span>
+
+                    </div>
+
+                `;
+
+
+                $patientInfoSection
+                    .classList
+                    .remove('d-none');
+
+
+                currentPredict = id;
+
+
+                /* -------------------------------------------------
+                   DEFAULT PLAN STATE
+                ------------------------------------------------- */
+
+                $totalAmount.value = '';
+
+                $totalAmount.disabled = false;
+
+
+                $sumTotal.textContent = '0.00';
+                $sumPaid.textContent = '0.00';
+                $sumRemaining.textContent = '0.00';
+
+
+                $ptFull.checked = true;
+
+
+                $deliveriesContainer.innerHTML = '';
+
+
+                casesState = {
+                    total_upper: 0,
+                    total_lower: 0,
+                    delivered_upper: 0,
+                    delivered_lower: 0,
+                    remaining_upper: 0,
+                    remaining_lower: 0
+                };
+
+
+                renderCases();
+
+
+                /* -------------------------------------------------
+                   GET EXISTING PLAN
+                ------------------------------------------------- */
+
+                const getUrl =
+                    routeGet.replace(
+                        'PREDICT_ID',
+                        encodeURIComponent(id)
+                    );
+
+
+                const planResponse =
+                    await fetch(getUrl, {
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+
+
+                if (!planResponse.ok) {
+
+                    throw new Error(
+                        'Unable to load payment information.'
+                    );
+                }
+
+
+                const data =
+                    await planResponse.json();
+
+
+                const plan =
+                    data.plan || null;
+
+                const payments =
+                    data.payments || [];
+
+                const deliveries =
+                    data.deliveries || [];
+
+
+                casesState =
+                    data.cases || casesState;
+
+
+                renderCases();
+
+
+                /* -------------------------------------------------
+                   NO EXISTING PLAN
+                ------------------------------------------------- */
+
+                if (!plan) {
+
+                    hasSavedPlan = false;
+
+
+                    $planCard
+                        .classList
+                        .remove('d-none');
+
+
+                    $deliverySection
+                        .classList
+                        .add('d-none');
+
+
+                    $historySection
+                        .classList
+                        .add('d-none');
+
+
+                    $btnSavePlan.disabled = false;
+
+
+                    return;
+                }
+
+
+                /* -------------------------------------------------
+                   EXISTING PLAN
+                ------------------------------------------------- */
+
+                hasSavedPlan = true;
+
+
+                $planCard
+                    .classList
+                    .remove('d-none');
+
+
+                $totalAmount.value =
+                    parseFloat(
+                        plan.total_amount || 0
+                    ).toFixed(2);
+
+
+                $totalAmount.disabled = true;
+
+
+                if (plan.is_installment) {
+
+                    $ptInstallment.checked = true;
+
+                } else {
+
+                    $ptFull.checked = true;
+                }
+
+
+                const paid =
+                    parseFloat(
+                        data.paid || 0
+                    );
+
+
+                const remaining =
+                    Math.max(
+                        0,
+                        parseFloat(
+                            plan.total_amount || 0
+                        ) - paid
+                    );
+
+
+                $sumTotal.textContent =
+                    parseFloat(
+                        plan.total_amount || 0
+                    ).toFixed(2);
+
+
+                $sumPaid.textContent =
+                    paid.toFixed(2);
+
+
+                $sumRemaining.textContent =
+                    remaining.toFixed(2);
+
+
+                /* -------------------------------------------------
+                   SHOW DELIVERY SECTION
+                ------------------------------------------------- */
+
+                $deliverySection
+                    .classList
+                    .remove('d-none');
+
+
+                renderExistingDeliveries(
+                    deliveries
+                );
+
+
+                /* -------------------------------------------------
+                   PAYMENT HISTORY
+                ------------------------------------------------- */
+
+                $historySection
+                    .classList
+                    .remove('d-none');
+
+
+                renderHistory(payments);
+
+
+                applyLockState(
+                    !!plan.is_closed
+                );
+
+
+            } catch (error) {
+
+                console.error(error);
+
+                alert(
+                    error.message ||
+                    'Failed to load patient information.'
+                );
+            }
+
+        }
+    );
+
+
+    /* =========================================================
+       SAVE PAYMENT PLAN
+       ONLY TOTAL AMOUNT + PLAN TYPE
+    ========================================================= */
+
+    $btnSavePlan.addEventListener(
+        'click',
+        async function () {
+
+            if (!currentPredict) {
+
+                alert(
+                    'Please search for a patient first.'
+                );
+
+                return;
+            }
+
+
+            const total =
+                parseFloat(
+                    $totalAmount.value || '0'
+                ) || 0;
+
+
+            const planType =
+                document.querySelector(
+                    'input[name="planType"]:checked'
+                )?.value || 'full';
+
+
+            if (total <= 0) {
+
+                alert(
+                    'Please enter a valid Total Amount.'
+                );
+
+                $totalAmount.focus();
+
+                return;
+            }
+
+
+            $btnSavePlan.disabled = true;
+
+
+            try {
+
+                const url =
+                    routeSave.replace(
+                        'PREDICT_ID',
+                        encodeURIComponent(
+                            currentPredict
+                        )
+                    );
+
+
+                const response =
+                    await fetch(url, {
+
+                        method: 'POST',
+
+                        headers: {
+                            'Content-Type':
+                                'application/json',
+
+                            'Accept':
+                                'application/json',
+
+                            'X-CSRF-TOKEN':
+                                csrf
+                        },
+
+                        body: JSON.stringify({
+
+                            total_amount:
+                                total,
+
+                            is_installment:
+                                planType === 'installment'
+
+                        })
+
+                    });
+
+
+                const contentType =
+                    response.headers
+                        .get('content-type') || '';
+
+
+                if (!response.ok) {
+
+                    let message =
+                        'Failed to save payment plan.';
+
+
+                    if (
+                        contentType
+                            .includes(
+                                'application/json'
+                            )
+                    ) {
+
+                        const errorData =
+                            await response.json();
+
+                        message =
+                            errorData.message ||
+                            message;
+
+                    } else {
+
+                        message =
+                            await response.text() ||
+                            message;
+                    }
+
+
+                    throw new Error(message);
+                }
+
+
+                const data =
+                    await response.json();
+
+
+                const savedPlan =
+                    data.plan || null;
+
+
+                const savedTotal =
+                    savedPlan
+                        ? parseFloat(
+                            savedPlan.total_amount || total
+                        )
+                        : total;
+
+
+                $totalAmount.value =
+                    savedTotal.toFixed(2);
+
+
+                $sumTotal.textContent =
+                    savedTotal.toFixed(2);
+
+
+                $totalAmount.disabled = true;
+
+
+                hasSavedPlan = true;
+
+
+                if ($btnEditTotal) {
+
+                    $btnEditTotal
+                        .classList
+                        .remove('d-none');
+                }
+
+
+                if ($btnSaveTotal) {
+
+                    $btnSaveTotal
+                        .classList
+                        .add('d-none');
+                }
+
+
+                /* -------------------------------------------------
+                   THIS IS IMPORTANT:
+                   Delivery becomes available ONLY AFTER
+                   Save Plan.
+                ------------------------------------------------- */
+
+                $deliverySection
+                    .classList
+                    .remove('d-none');
+
+
+                $historySection
+                    .classList
+                    .remove('d-none');
+
+
+                showPlanStatus(
+                    'Payment plan saved successfully.'
+                );
+
+
+                /* Refresh plan data */
+                await refreshPlanData(false);
+
+
+            } catch (error) {
+
+                console.error(error);
+
+                alert(
+                    error.message ||
+                    'Failed to save payment plan.'
+                );
+
+            } finally {
+
+                $btnSavePlan.disabled = false;
+            }
+
+        }
+    );
+
+
+    /* =========================================================
+       EDIT TOTAL
+    ========================================================= */
+
+    if ($btnEditTotal && $btnSaveTotal) {
+
+        $btnEditTotal.addEventListener(
+            'click',
+            function () {
+
+                if (caseClosed) {
+                    return;
+                }
+
+                $totalAmount.disabled = false;
+
+                $totalAmount.focus();
+
+                $btnEditTotal
+                    .classList
+                    .add('d-none');
+
+                $btnSaveTotal
+                    .classList
+                    .remove('d-none');
+            }
+        );
+
+
+        $btnSaveTotal.addEventListener(
+            'click',
+            async function () {
+
+                if (!currentPredict) {
+
+                    alert(
+                        'Please search for a patient first.'
+                    );
+
+                    return;
+                }
+
+
+                const amount =
+                    parseFloat(
+                        $totalAmount.value || '0'
+                    ) || 0;
+
+
+                if (amount <= 0) {
+
+                    alert(
+                        'Please enter a valid total amount.'
+                    );
+
+                    return;
+                }
+
+
+                $btnSaveTotal.disabled = true;
+
+
+                try {
+
+                    const url =
+                        routeUpdateTotal.replace(
+                            'PREDICT_ID',
+                            encodeURIComponent(
+                                currentPredict
+                            )
+                        );
+
+
+                    const response =
+                        await fetch(url, {
+
+                            method: 'PUT',
+
+                            headers: {
+                                'Content-Type':
+                                    'application/json',
+
+                                'Accept':
+                                    'application/json',
+
+                                'X-CSRF-TOKEN':
+                                    csrf
+                            },
+
+                            body: JSON.stringify({
+                                total_amount: amount
+                            })
+
+                        });
+
+
+                    const contentType =
+                        response.headers
+                            .get('content-type') || '';
+
+
+                    if (!response.ok) {
+
+                        let message =
+                            'Failed to update total amount.';
+
+
+                        if (
+                            contentType
+                                .includes(
+                                    'application/json'
+                                )
+                        ) {
+
+                            const errorData =
+                                await response.json();
+
+                            message =
+                                errorData.message ||
+                                message;
+
+                        } else {
+
+                            message =
+                                await response.text() ||
+                                message;
+                        }
+
+
+                        throw new Error(message);
+                    }
+
+
+                    const data =
+                        await response.json();
+
+
+                    const updatedTotal =
+                        parseFloat(
+                            data.plan?.total_amount ||
+                            amount
+                        );
+
+
+                    $totalAmount.value =
+                        updatedTotal.toFixed(2);
+
+
+                    $totalAmount.disabled = true;
+
+
+                    $btnEditTotal
+                        .classList
+                        .remove('d-none');
+
+
+                    $btnSaveTotal
+                        .classList
+                        .add('d-none');
+
+
+                    await refreshPlanData(false);
+
+
+                    showPlanStatus(
+                        'Total amount updated successfully.'
+                    );
+
+
+                } catch (error) {
+
+                    console.error(error);
+
+                    alert(
+                        error.message ||
+                        'Failed to update total amount.'
+                    );
+
+                } finally {
+
+                    $btnSaveTotal.disabled = false;
+                }
+
+            }
+        );
+    }
+
+
+    /* =========================================================
+       TOTAL AMOUNT LIVE UPDATE
+    ========================================================= */
+
+    $totalAmount.addEventListener(
+        'input',
+        recalcSummary
+    );
+
+
+    /* =========================================================
+       REFRESH PLAN DATA
+    ========================================================= */
+
+    async function refreshPlanData(createDraft = false) {
+
+        if (!currentPredict) {
+            return;
+        }
+
+
+        const url =
+            routeGet.replace(
+                'PREDICT_ID',
+                encodeURIComponent(
+                    currentPredict
+                )
+            );
+
+
+        const response =
+            await fetch(url, {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+
+        if (!response.ok) {
+            return;
+        }
+
+
+        const data =
+            await response.json();
+
+
+        const plan =
+            data.plan || null;
+
+
+        if (!plan) {
+            return;
+        }
+
+
+        const payments =
+            data.payments || [];
+
+
+        const deliveries =
+            data.deliveries || [];
+
+
+        casesState =
+            data.cases || casesState;
+
+
+        hasSavedPlan = true;
+
+
+        $totalAmount.value =
+            parseFloat(
+                plan.total_amount || 0
+            ).toFixed(2);
+
+
+        $totalAmount.disabled = true;
+
+
+        if (plan.is_installment) {
+            $ptInstallment.checked = true;
+        } else {
+            $ptFull.checked = true;
+        }
+
+
+        const paid =
+            payments.reduce(
+                (sum, payment) =>
+                    sum +
+                    parseFloat(
+                        payment.amount || 0
+                    ),
+                0
+            );
+
+
+        const remaining =
+            Math.max(
+                0,
+                parseFloat(
+                    plan.total_amount || 0
+                ) - paid
+            );
+
+
+        $sumTotal.textContent =
+            parseFloat(
+                plan.total_amount || 0
+            ).toFixed(2);
+
+
+        $sumPaid.textContent =
+            paid.toFixed(2);
+
+
+        $sumRemaining.textContent =
+            remaining.toFixed(2);
+
 
         renderCases();
-        addNewDeliveryDraft();
 
-      } catch (err) {
-        alert(err.message || 'Error saving delivery');
-      } finally {
-        btn.disabled = false;
-      }
-    });
-  }
+        renderExistingDeliveries(
+            deliveries
+        );
+
+        renderHistory(
+            payments
+        );
+
+
+        $deliverySection
+            .classList
+            .remove('d-none');
+
+
+        $historySection
+            .classList
+            .remove('d-none');
+
+
+        applyLockState(
+            !!plan.is_closed
+        );
+
+
+        /*
+         * IMPORTANT:
+         * We deliberately DO NOT create a delivery draft here.
+         *
+         * The user must click:
+         *
+         * + New Delivery
+         *
+         * themselves.
+         */
+    }
+
+
+    /* =========================================================
+       URL AUTO SEARCH
+    ========================================================= */
+
+    const urlParams =
+        new URLSearchParams(
+            window.location.search
+        );
+
+
+    const queryPredict =
+        (
+            urlParams.get('predict3d_id') ||
+            ''
+        ).trim();
+
+
+    if (queryPredict) {
+
+        $predict.value =
+            queryPredict;
+
+
+        window.addEventListener(
+            'load',
+            function () {
+
+                $btnFetch.click();
+
+            }
+        );
+    }
+
+
 })();
 </script>
+
+<script>
+(function () {
+
+    'use strict';
+
+    const routeAddDelivery =
+        "{{ route('admin.payments.plan.add-delivery', ['predict3dId' => 'PREDICT_ID']) }}";
+
+    const csrf =
+        document.querySelector(
+            'meta[name="csrf-token"]'
+        )?.getAttribute('content') || '';
+
+
+    const $predict =
+        document.getElementById('predictId');
+
+    const $deliveriesContainer =
+        document.getElementById('deliveriesContainer');
+
+    const $btnNewDelivery =
+        document.getElementById('btnNewDelivery');
+
+    const $btnDone =
+        document.getElementById('btnDone');
+
+    const $totalAmount =
+        document.getElementById('totalAmount');
+
+    const $deliverySection =
+        document.getElementById('deliverySection');
+
+    const $historySection =
+        document.getElementById('historySection');
+
+    const $sumPaid =
+        document.getElementById('sumPaid');
+
+    const $sumTotal =
+        document.getElementById('sumTotal');
+
+    const $sumRemaining =
+        document.getElementById('sumRemaining');
+
+    const $casesUpperTotal =
+        document.getElementById('casesUpperTotal');
+
+    const $casesLowerTotal =
+        document.getElementById('casesLowerTotal');
+
+    const $casesUpperRemaining =
+        document.getElementById('casesUpperRemaining');
+
+    const $casesLowerRemaining =
+        document.getElementById('casesLowerRemaining');
+
+    const $caseClosedBadge =
+        document.getElementById('caseClosedBadge');
+
+
+    let caseClosed = false;
+
+
+    /* =========================================================
+       HELPERS
+    ========================================================= */
+
+    function today() {
+
+        const d = new Date();
+
+        const y =
+            d.getFullYear();
+
+        const m =
+            String(
+                d.getMonth() + 1
+            ).padStart(2, '0');
+
+        const day =
+            String(
+                d.getDate()
+            ).padStart(2, '0');
+
+        return `${y}-${m}-${day}`;
+    }
+
+
+    function escapeHtml(value) {
+
+        if (
+            value === null ||
+            value === undefined
+        ) {
+            return '';
+        }
+
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+
+    function fmtDate(value) {
+
+        if (!value) {
+            return '';
+        }
+
+        const d =
+            new Date(value);
+
+        if (
+            Number.isNaN(
+                d.getTime()
+            )
+        ) {
+            return String(value);
+        }
+
+        const y =
+            d.getFullYear();
+
+        const m =
+            String(
+                d.getMonth() + 1
+            ).padStart(2, '0');
+
+        const day =
+            String(
+                d.getDate()
+            ).padStart(2, '0');
+
+        return `${y}-${m}-${day}`;
+    }
+
+
+    function fmtMethod(value) {
+
+        if (!value) {
+            return 'Unknown';
+        }
+
+        return String(value)
+            .replace(/_/g, ' ')
+            .replace(
+                /\b\w/g,
+                c => c.toUpperCase()
+            );
+    }
+
+
+    /* =========================================================
+       DELIVERY TEMPLATE
+    ========================================================= */
+
+    function deliveryTemplate(number) {
+
+        return `
+        <div
+            class="delivery-draft mb-3"
+            data-delivery-draft="1"
+        >
+
+            <div class="delivery-header">
+
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+
+                    <div class="fw-semibold text-primary">
+
+                        <i class="fas fa-plus-circle me-2"></i>
+
+                        New Delivery
+
+                    </div>
+
+                    <div class="text-muted small">
+                        Delivery #${number}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="p-4">
+
+                {{-- Basic delivery information --}}
+                <div class="row g-3">
+
+                    {{-- Upper --}}
+                    <div class="col-md-2">
+
+                        <label class="form-label">
+                            Upper cases
+                        </label>
+
+                        <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            class="form-control js-upper"
+                            value="0"
+                        >
+
+                    </div>
+
+
+                    {{-- Lower --}}
+                    <div class="col-md-2">
+
+                        <label class="form-label">
+                            Lower cases
+                        </label>
+
+                        <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            class="form-control js-lower"
+                            value="0"
+                        >
+
+                    </div>
+
+
+                    {{-- Paid amount --}}
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+                            Paid amount
+                        </label>
+
+                        <div class="input-group">
+
+                            <span class="input-group-text">
+                                BDT
+                            </span>
+
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                class="form-control js-paid"
+                                value="0.00"
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    {{-- Date --}}
+                    <div class="col-md-2">
+
+                        <label class="form-label">
+                            Delivery date
+                        </label>
+
+                        <input
+                            type="date"
+                            class="form-control js-date"
+                            value="${today()}"
+                        >
+
+                    </div>
+
+
+                    {{-- Payment method --}}
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+                            Payment method
+                        </label>
+
+                        <select
+                            class="form-select js-payment-method"
+                        >
+
+                            <option value="cash">
+                                Cash
+                            </option>
+
+                            <option value="card">
+                                Card
+                            </option>
+
+                            <option value="bank_transfer">
+                                Bank Transfer
+                            </option>
+
+                            <option value="mobile_banking">
+                                Mobile Banking
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+
+                {{-- =================================================
+                     BANK TRANSFER
+                ================================================== --}}
+                <div
+                    class="row g-3 mt-2 d-none js-bank-details"
+                >
+
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+                            Bank Name
+                        </label>
+
+                        <select
+                            class="form-select js-bank"
+                        >
+
+                            <option value="">
+                                Select Bank
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+                            Branch Name
+                        </label>
+
+                        <select
+                            class="form-select js-branch"
+                            disabled
+                        >
+
+                            <option value="">
+                                Select Branch
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+                            Account Name
+                        </label>
+
+                        <input
+                            type="text"
+                            class="form-control js-account-name"
+                            placeholder="Account name"
+                            disabled
+                        >
+
+                    </div>
+
+
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+                            Account Number
+                        </label>
+
+                        <input
+                            type="text"
+                            class="form-control js-account-number"
+                            placeholder="Account number"
+                            disabled
+                        >
+
+                    </div>
+
+                </div>
+
+
+                {{-- =================================================
+                     MOBILE BANKING
+                ================================================== --}}
+                <div
+                    class="row g-3 mt-2 d-none js-mobile-details"
+                >
+
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+                            Mobile Banking
+                        </label>
+
+                        <select
+                            class="form-select js-mobile-provider"
+                        >
+
+                            <option value="">
+                                Select Provider
+                            </option>
+
+                            <option value="bkash">
+                                bKash
+                            </option>
+
+                            <option value="nagad">
+                                Nagad
+                            </option>
+
+                            <option value="rocket">
+                                Rocket
+                            </option>
+
+                            <option value="upay">
+                                Upay
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+                            Mobile Number
+                        </label>
+
+                        <input
+                            type="text"
+                            class="form-control js-mobile-number"
+                            placeholder="01XXXXXXXXX"
+                        >
+
+                    </div>
+
+
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+                            Transaction ID
+                        </label>
+
+                        <input
+                            type="text"
+                            class="form-control js-transaction-id"
+                            placeholder="Enter transaction ID"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                {{-- Actions --}}
+                <div
+                    class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top"
+                >
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary px-4 js-cancel"
+                    >
+                        <i class="fas fa-times me-1"></i>
+                        Cancel
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn btn-success px-4 js-save"
+                    >
+                        <i class="fas fa-save me-1"></i>
+                        Save
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+        `;
+    }
+
+
+    /* =========================================================
+       NEW DELIVERY BUTTON
+    ========================================================= */
+
+    $btnNewDelivery.addEventListener(
+        'click',
+        async function () {
+
+            if (!$predict.value.trim()) {
+
+                alert(
+                    'Please search for a patient first.'
+                );
+
+                return;
+            }
+
+
+            if (
+                $totalAmount.disabled === false ||
+                !parseFloat(
+                    $totalAmount.value || '0'
+                )
+            ) {
+
+                alert(
+                    'Please save the payment plan before creating a delivery.'
+                );
+
+                return;
+            }
+
+
+            if (caseClosed) {
+
+                alert(
+                    'This case is closed. No new delivery can be added.'
+                );
+
+                return;
+            }
+
+
+            /*
+             * Prevent multiple unsaved delivery forms.
+             */
+
+            const existingDraft =
+                $deliveriesContainer
+                    .querySelector(
+                        '[data-delivery-draft="1"]'
+                    );
+
+
+            if (existingDraft) {
+
+                existingDraft.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+
+                return;
+            }
+
+
+            const existingDeliveries =
+                $deliveriesContainer
+                    .querySelectorAll(
+                        '.delivery-card'
+                    ).length;
+
+
+            const number =
+                existingDeliveries + 1;
+
+
+            $deliveriesContainer.insertAdjacentHTML(
+                'afterbegin',
+                deliveryTemplate(number)
+            );
+
+
+            const draft =
+                $deliveriesContainer
+                    .querySelector(
+                        '[data-delivery-draft="1"]'
+                    );
+
+
+            if (draft) {
+
+                await initializeDeliveryPayment(
+                    draft
+                );
+
+
+                draft.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }
+
+        }
+    );
+
+
+    /* =========================================================
+       INITIALIZE DELIVERY PAYMENT
+    ========================================================= */
+
+    async function initializeDeliveryPayment(card) {
+
+        const method =
+            card.querySelector(
+                '.js-payment-method'
+            );
+
+        const bankDetails =
+            card.querySelector(
+                '.js-bank-details'
+            );
+
+        const mobileDetails =
+            card.querySelector(
+                '.js-mobile-details'
+            );
+
+        const bankSelect =
+            card.querySelector(
+                '.js-bank'
+            );
+
+        const branchSelect =
+            card.querySelector(
+                '.js-branch'
+            );
+
+        const accountName =
+            card.querySelector(
+                '.js-account-name'
+            );
+
+        const accountNumber =
+            card.querySelector(
+                '.js-account-number'
+            );
+
+
+        /* ---------------------------------------------------------
+           LOAD BANKS
+        --------------------------------------------------------- */
+
+        try {
+
+            const response =
+                await fetch(
+                    "{{ route('admin.banks.index') }}",
+                    {
+                        headers: {
+                            'Accept':
+                                'application/json'
+                        }
+                    }
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    'Failed to load banks.'
+                );
+            }
+
+
+            const banks =
+                await response.json();
+
+
+            bankSelect.innerHTML =
+                '<option value="">Select Bank</option>';
+
+
+            banks.forEach(
+                bank => {
+
+                    const option =
+                        document.createElement(
+                            'option'
+                        );
+
+                    option.value =
+                        bank.id;
+
+                    option.textContent =
+                        bank.bank_name;
+
+                    bankSelect.appendChild(
+                        option
+                    );
+                }
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                'Bank loading error:',
+                error
+            );
+        }
+
+
+        /* ---------------------------------------------------------
+           PAYMENT METHOD CHANGE
+        --------------------------------------------------------- */
+
+        method.addEventListener(
+            'change',
+            function () {
+
+                const selected =
+                    this.value;
+
+
+                bankDetails
+                    .classList
+                    .add('d-none');
+
+
+                mobileDetails
+                    .classList
+                    .add('d-none');
+
+
+                if (
+                    selected ===
+                    'bank_transfer'
+                ) {
+
+                    bankDetails
+                        .classList
+                        .remove('d-none');
+                }
+
+
+                if (
+                    selected ===
+                    'mobile_banking'
+                ) {
+
+                    mobileDetails
+                        .classList
+                        .remove('d-none');
+                }
+
+            }
+        );
+
+
+        /* ---------------------------------------------------------
+           BANK CHANGE
+        --------------------------------------------------------- */
+
+        bankSelect.addEventListener(
+            'change',
+            async function () {
+
+                branchSelect.innerHTML =
+                    '<option value="">Select Branch</option>';
+
+                branchSelect.disabled = true;
+
+
+                accountName.value = '';
+                accountNumber.value = '';
+
+                accountName.disabled = true;
+                accountNumber.disabled = true;
+
+
+                if (!this.value) {
+                    return;
+                }
+
+
+                try {
+
+                    const response =
+                        await fetch(
+                            '/admin/banks/' +
+                            encodeURIComponent(
+                                this.value
+                            ) +
+                            '/branches',
+                            {
+                                headers: {
+                                    'Accept':
+                                        'application/json'
+                                }
+                            }
+                        );
+
+
+                    if (!response.ok) {
+
+                        throw new Error(
+                            'Failed to load branches.'
+                        );
+                    }
+
+
+                    const branches =
+                        await response.json();
+
+
+                    branches.forEach(
+                        branch => {
+
+                            const option =
+                                document.createElement(
+                                    'option'
+                                );
+
+
+                            option.value =
+                                branch.id;
+
+
+                            option.textContent =
+                                branch.branch_name;
+
+
+                            option.dataset.accountName =
+                                branch.account_name || '';
+
+
+                            option.dataset.accountNumber =
+                                branch.account_number || '';
+
+
+                            branchSelect.appendChild(
+                                option
+                            );
+                        }
+                    );
+
+
+                    branchSelect.disabled = false;
+
+
+                } catch (error) {
+
+                    console.error(
+                        error
+                    );
+
+                    alert(
+                        'Failed to load branches.'
+                    );
+                }
+
+            }
+        );
+
+
+        /* ---------------------------------------------------------
+           BRANCH CHANGE
+        --------------------------------------------------------- */
+
+        branchSelect.addEventListener(
+            'change',
+            function () {
+
+                const option =
+                    this.options[
+                        this.selectedIndex
+                    ];
+
+
+                if (!this.value) {
+
+                    accountName.value = '';
+                    accountNumber.value = '';
+
+                    accountName.disabled = true;
+                    accountNumber.disabled = true;
+
+                    return;
+                }
+
+
+                accountName.value =
+                    option.dataset.accountName || '';
+
+
+                accountNumber.value =
+                    option.dataset.accountNumber || '';
+
+
+                accountName.disabled = false;
+                accountNumber.disabled = false;
+
+            }
+        );
+
+    }
+
+
+    /* =========================================================
+       DELIVERY CLICK HANDLER
+    ========================================================= */
+
+    $deliveriesContainer.addEventListener(
+        'click',
+        async function (event) {
+
+            /* -----------------------------------------------------
+               CANCEL
+            ----------------------------------------------------- */
+
+            const cancelButton =
+                event.target.closest(
+                    '.js-cancel'
+                );
+
+
+            if (cancelButton) {
+
+                const card =
+                    cancelButton.closest(
+                        '[data-delivery-draft="1"]'
+                    );
+
+
+                if (card) {
+                    card.remove();
+                }
+
+
+                return;
+            }
+
+
+            /* -----------------------------------------------------
+               SAVE
+            ----------------------------------------------------- */
+
+            const saveButton =
+                event.target.closest(
+                    '.js-save'
+                );
+
+
+            if (!saveButton) {
+                return;
+            }
+
+
+            const card =
+                saveButton.closest(
+                    '[data-delivery-draft="1"]'
+                );
+
+
+            if (!card) {
+                return;
+            }
+
+
+            if (caseClosed) {
+
+                alert(
+                    'This case is closed. No new delivery can be added.'
+                );
+
+                return;
+            }
+
+
+            const upper =
+                parseInt(
+                    card.querySelector(
+                        '.js-upper'
+                    ).value || '0',
+                    10
+                ) || 0;
+
+
+            const lower =
+                parseInt(
+                    card.querySelector(
+                        '.js-lower'
+                    ).value || '0',
+                    10
+                ) || 0;
+
+
+            const paidAmount =
+                parseFloat(
+                    card.querySelector(
+                        '.js-paid'
+                    ).value || '0'
+                ) || 0;
+
+
+            const deliveryDate =
+                card.querySelector(
+                    '.js-date'
+                ).value;
+
+
+            const paymentMethod =
+                card.querySelector(
+                    '.js-payment-method'
+                ).value;
+
+
+            const bankSelect =
+                card.querySelector(
+                    '.js-bank'
+                );
+
+
+            const branchSelect =
+                card.querySelector(
+                    '.js-branch'
+                );
+
+
+            const accountName =
+                card.querySelector(
+                    '.js-account-name'
+                );
+
+
+            const accountNumber =
+                card.querySelector(
+                    '.js-account-number'
+                );
+
+
+            const mobileProvider =
+                card.querySelector(
+                    '.js-mobile-provider'
+                );
+
+
+            const mobileNumber =
+                card.querySelector(
+                    '.js-mobile-number'
+                );
+
+
+            const transactionId =
+                card.querySelector(
+                    '.js-transaction-id'
+                );
+
+
+            /* -----------------------------------------------------
+               VALIDATION
+            ----------------------------------------------------- */
+
+            if (!deliveryDate) {
+
+                alert(
+                    'Please select a delivery date.'
+                );
+
+                return;
+            }
+
+
+            if (
+                upper < 0 ||
+                lower < 0
+            ) {
+
+                alert(
+                    'Cases cannot be negative.'
+                );
+
+                return;
+            }
+
+
+            if (paidAmount < 0) {
+
+                alert(
+                    'Paid amount cannot be negative.'
+                );
+
+                return;
+            }
+
+
+            if (
+                upper === 0 &&
+                lower === 0 &&
+                paidAmount === 0
+            ) {
+
+                alert(
+                    'Enter at least one delivered case or a paid amount.'
+                );
+
+                return;
+            }
+
+
+            const total =
+                parseFloat(
+                    $totalAmount.value || '0'
+                ) || 0;
+
+
+            if (total <= 0) {
+
+                alert(
+                    'Please save the payment plan first.'
+                );
+
+                return;
+            }
+
+
+            /* -----------------------------------------------------
+               BANK VALIDATION
+            ----------------------------------------------------- */
+
+            if (
+                paymentMethod ===
+                'bank_transfer'
+            ) {
+
+                if (!bankSelect.value) {
+
+                    alert(
+                        'Please select a bank.'
+                    );
+
+                    return;
+                }
+
+
+                if (!branchSelect.value) {
+
+                    alert(
+                        'Please select a branch.'
+                    );
+
+                    return;
+                }
+            }
+
+
+            /* -----------------------------------------------------
+               MOBILE VALIDATION
+            ----------------------------------------------------- */
+
+            if (
+                paymentMethod ===
+                'mobile_banking'
+            ) {
+
+                if (
+                    !mobileProvider.value
+                ) {
+
+                    alert(
+                        'Please select a mobile banking provider.'
+                    );
+
+                    return;
+                }
+
+
+                if (
+                    !mobileNumber.value.trim()
+                ) {
+
+                    alert(
+                        'Please enter the mobile number.'
+                    );
+
+                    return;
+                }
+            }
+
+
+            saveButton.disabled = true;
+
+
+            try {
+
+                const predictId =
+                    $predict.value.trim();
+
+
+                const url =
+                    routeAddDelivery.replace(
+                        'PREDICT_ID',
+                        encodeURIComponent(
+                            predictId
+                        )
+                    );
+
+
+                const payload = {
+
+                    upper_delivered:
+                        upper,
+
+                    lower_delivered:
+                        lower,
+
+                    paid_amount:
+                        paidAmount,
+
+                    delivery_date:
+                        deliveryDate,
+
+                    payment_method:
+                        paymentMethod,
+
+                    total_amount:
+                        total,
+
+                    bank_name:
+                        paymentMethod ===
+                        'bank_transfer'
+                            ? (
+                                bankSelect
+                                    .options[
+                                        bankSelect
+                                            .selectedIndex
+                                    ]?.text.trim() || ''
+                              )
+                            : '',
+
+                    branch_name:
+                        paymentMethod ===
+                        'bank_transfer'
+                            ? (
+                                branchSelect
+                                    .options[
+                                        branchSelect
+                                            .selectedIndex
+                                    ]?.text.trim() || ''
+                              )
+                            : '',
+
+                    account_name:
+                        paymentMethod ===
+                        'bank_transfer'
+                            ? accountName
+                                .value
+                                .trim()
+                            : '',
+
+                    account_number:
+                        paymentMethod ===
+                        'bank_transfer'
+                            ? accountNumber
+                                .value
+                                .trim()
+
+                            : paymentMethod ===
+                              'mobile_banking'
+                                ? mobileNumber
+                                    .value
+                                    .trim()
+
+                                : '',
+
+                    mobile_provider:
+                        paymentMethod ===
+                        'mobile_banking'
+                            ? mobileProvider.value
+                            : '',
+
+                    transaction_id:
+                        paymentMethod ===
+                        'mobile_banking'
+                            ? transactionId
+                                .value
+                                .trim()
+                            : ''
+                };
+
+
+                const response =
+                    await fetch(
+                        url,
+                        {
+
+                            method: 'POST',
+
+                            headers: {
+
+                                'Content-Type':
+                                    'application/json',
+
+                                'Accept':
+                                    'application/json',
+
+                                'X-CSRF-TOKEN':
+                                    csrf
+
+                            },
+
+                            body:
+                                JSON.stringify(
+                                    payload
+                                )
+                        }
+                    );
+
+
+                const contentType =
+                    response.headers
+                        .get('content-type') || '';
+
+
+                if (!response.ok) {
+
+                    let message =
+                        'Failed to save delivery.';
+
+
+                    if (
+                        contentType
+                            .includes(
+                                'application/json'
+                            )
+                    ) {
+
+                        const errorData =
+                            await response.json();
+
+                        message =
+                            errorData.message ||
+                            message;
+
+                    } else {
+
+                        message =
+                            await response.text() ||
+                            message;
+                    }
+
+
+                    throw new Error(
+                        message
+                    );
+                }
+
+
+                const data =
+                    await response.json();
+
+
+                /* -------------------------------------------------
+                   UPDATE SUMMARY
+                ------------------------------------------------- */
+
+                const plan =
+                    data.plan || null;
+
+
+                const payments =
+                    data.payments || [];
+
+
+                const deliveries =
+                    data.deliveries || [];
+
+
+                const cases =
+                    data.cases || {};
+
+
+                const paidNow =
+                    payments.reduce(
+                        (
+                            sum,
+                            payment
+                        ) =>
+                            sum +
+                            parseFloat(
+                                payment.amount || 0
+                            ),
+                        0
+                    );
+
+
+                const totalNow =
+                    parseFloat(
+                        plan?.total_amount ||
+                        total
+                    );
+
+
+                const remainingNow =
+                    Math.max(
+                        0,
+                        totalNow -
+                        paidNow
+                    );
+
+
+                $sumTotal.textContent =
+                    totalNow.toFixed(2);
+
+
+                $sumPaid.textContent =
+                    paidNow.toFixed(2);
+
+
+                $sumRemaining.textContent =
+                    remainingNow.toFixed(2);
+
+
+                $casesUpperTotal.textContent =
+                    String(
+                        cases.total_upper || 0
+                    );
+
+
+                $casesLowerTotal.textContent =
+                    String(
+                        cases.total_lower || 0
+                    );
+
+
+                $casesUpperRemaining.textContent =
+                    String(
+                        cases.remaining_upper || 0
+                    );
+
+
+                $casesLowerRemaining.textContent =
+                    String(
+                        cases.remaining_lower || 0
+                    );
+
+
+                /* -------------------------------------------------
+                   REPLACE DRAFT WITH SAVED DELIVERY LIST
+                ------------------------------------------------- */
+
+                card.remove();
+
+
+                renderSavedDeliveries(
+                    deliveries
+                );
+
+
+                renderSavedHistory(
+                    payments
+                );
+
+
+                /* -------------------------------------------------
+                   SUCCESS
+                ------------------------------------------------- */
+
+                showDeliverySuccess();
+
+
+            } catch (error) {
+
+                console.error(error);
+
+                alert(
+                    error.message ||
+                    'Failed to save delivery.'
+                );
+
+            } finally {
+
+                saveButton.disabled = false;
+            }
+
+        }
+    );
+
+
+    /* =========================================================
+       RENDER SAVED DELIVERIES
+    ========================================================= */
+
+    function renderSavedDeliveries(
+        deliveries
+    ) {
+
+        /*
+         * Remove only saved delivery cards.
+         * Keep any active draft if one exists.
+         */
+
+        $deliveriesContainer
+            .querySelectorAll(
+                '.delivery-card'
+            )
+            .forEach(
+                element => element.remove()
+            );
+
+
+        if (
+            !deliveries ||
+            deliveries.length === 0
+        ) {
+
+            return;
+        }
+
+
+        const draft =
+            $deliveriesContainer
+                .querySelector(
+                    '[data-delivery-draft="1"]'
+                );
+
+
+        deliveries
+            .slice()
+            .reverse()
+            .forEach(
+                (delivery, reverseIndex) => {
+
+                    const number =
+                        deliveries.length -
+                        reverseIndex;
+
+
+                    const upper =
+                        parseInt(
+                            delivery.upper_delivered ||
+                            0,
+                            10
+                        );
+
+
+                    const lower =
+                        parseInt(
+                            delivery.lower_delivered ||
+                            0,
+                            10
+                        );
+
+
+                    const paid =
+                        parseFloat(
+                            delivery.paid_amount ||
+                            0
+                        );
+
+
+                    const html = `
+
+                        <div class="delivery-card mb-3">
+
+                            <div class="delivery-header">
+
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+
+                                    <div class="fw-semibold">
+
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+
+                                        Delivery #${number}
+
+                                    </div>
+
+                                    <div class="text-muted small">
+
+                                        ${escapeHtml(
+                                            fmtDate(
+                                                delivery.delivery_date
+                                            )
+                                        )}
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="p-4">
+
+                                <div class="row g-4">
+
+                                    <div class="col-md-3">
+
+                                        <div class="small text-muted">
+                                            Upper delivered
+                                        </div>
+
+                                        <div class="fw-bold fs-5">
+                                            ${upper}
+                                        </div>
+
+                                    </div>
+
+
+                                    <div class="col-md-3">
+
+                                        <div class="small text-muted">
+                                            Lower delivered
+                                        </div>
+
+                                        <div class="fw-bold fs-5">
+                                            ${lower}
+                                        </div>
+
+                                    </div>
+
+
+                                    <div class="col-md-3">
+
+                                        <div class="small text-muted">
+                                            Paid
+                                        </div>
+
+                                        <div class="fw-bold fs-5">
+                                            BDT ${paid.toFixed(2)}
+                                        </div>
+
+                                    </div>
+
+
+                                    <div class="col-md-3">
+
+                                        <div class="small text-muted">
+                                            Date
+                                        </div>
+
+                                        <div class="fw-bold">
+                                            ${escapeHtml(
+                                                fmtDate(
+                                                    delivery.delivery_date
+                                                )
+                                            )}
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+                    `;
+
+
+                    if (draft) {
+
+                      draft.insertAdjacentHTML(
+                          'afterend',
+                          html
+                      );
+
+                  } else {
+
+                      $deliveriesContainer
+                          .insertAdjacentHTML(
+                              'afterbegin',
+                              html
+                          );
+                  }
+
+                }
+            );
+    }
+
+
+    /* =========================================================
+       PAYMENT HISTORY
+    ========================================================= */
+
+    function renderSavedHistory(
+        payments
+    ) {
+
+        const tableBody =
+            document.querySelector(
+                '#historyTable tbody'
+            );
+
+
+        const empty =
+            document.getElementById(
+                'emptyHistory'
+            );
+
+
+        if (!tableBody) {
+            return;
+        }
+
+
+        if (
+            !payments ||
+            payments.length === 0
+        ) {
+
+            tableBody.innerHTML = '';
+
+            if (empty) {
+                empty.classList
+                    .remove('d-none');
+            }
+
+            return;
+        }
+
+
+        if (empty) {
+            empty.classList
+                .add('d-none');
+        }
+
+
+        tableBody.innerHTML =
+            payments.map(
+                payment => {
+
+                    const method =
+                        String(
+                            payment.payment_method ||
+                            ''
+                        );
+
+
+                    let icon =
+                        'fa-money-bill-wave';
+
+                    let badge =
+                        'bg-success';
+
+
+                    if (
+                        method ===
+                        'bank_transfer'
+                    ) {
+
+                        icon =
+                            'fa-university';
+
+                        badge =
+                            'bg-primary';
+                    }
+
+
+                    if (
+                        method ===
+                        'mobile_banking'
+                    ) {
+
+                        icon =
+                            'fa-mobile-alt';
+
+                        badge =
+                            'bg-info';
+                    }
+
+
+                    if (
+                        method ===
+                        'card'
+                    ) {
+
+                        icon =
+                            'fa-credit-card';
+
+                        badge =
+                            'bg-warning text-dark';
+                    }
+
+
+                    return `
+
+                        <tr>
+
+                            <td class="px-4">
+                                ${escapeHtml(
+                                    fmtDate(
+                                        payment.payment_date
+                                    )
+                                )}
+                            </td>
+
+                            <td>
+
+                                <span class="badge ${badge} px-3 py-2">
+
+                                    <i class="fas ${icon} me-1"></i>
+
+                                    ${escapeHtml(
+                                        fmtMethod(method)
+                                    )}
+
+                                </span>
+
+                            </td>
+
+                            <td>
+
+                                ${buildPaymentDetails(
+                                    payment
+                                )}
+
+                            </td>
+
+                            <td class="text-end px-4">
+
+                                <span class="fw-bold text-primary">
+
+                                    BDT
+                                    ${(
+                                        parseFloat(
+                                            payment.amount || 0
+                                        )
+                                    ).toFixed(2)}
+
+                                </span>
+
+                            </td>
+
+                        </tr>
+                    `;
+                }
+            ).join('');
+    }
+
+
+    function buildPaymentDetails(
+        payment
+    ) {
+
+        const method =
+            String(
+                payment.payment_method ||
+                ''
+            );
+
+
+        if (
+            method === 'cash' ||
+            method === 'card'
+        ) {
+
+            return `
+                <span class="text-muted small">
+                    No additional details
+                </span>
+            `;
+        }
+
+
+        if (
+            method === 'bank_transfer'
+        ) {
+
+            return `
+
+                <div class="small">
+
+                    <div class="fw-semibold">
+
+                        <i class="fas fa-university text-primary me-1"></i>
+
+                        ${escapeHtml(
+                            payment.bank_name ||
+                            'Bank Transfer'
+                        )}
+
+                    </div>
+
+                    ${
+                        payment.branch_name
+                            ? `
+                                <div class="text-muted">
+                                    Branch:
+                                    ${escapeHtml(
+                                        payment.branch_name
+                                    )}
+                                </div>
+                              `
+                            : ''
+                    }
+
+                    ${
+                        payment.account_name
+                            ? `
+                                <div class="text-muted">
+                                    Account:
+                                    ${escapeHtml(
+                                        payment.account_name
+                                    )}
+                                </div>
+                              `
+                            : ''
+                    }
+
+                    ${
+                        payment.account_number
+                            ? `
+                                <div class="text-muted">
+                                    A/C:
+                                    ${escapeHtml(
+                                        payment.account_number
+                                    )}
+                                </div>
+                              `
+                            : ''
+                    }
+
+                </div>
+            `;
+        }
+
+
+        if (
+            method === 'mobile_banking'
+        ) {
+
+            return `
+
+                <div class="small">
+
+                    ${
+                        payment.mobile_provider
+                            ? `
+                                <div class="fw-semibold">
+                                    <i class="fas fa-mobile-alt text-primary me-1"></i>
+                                    ${escapeHtml(
+                                        payment.mobile_provider
+                                    )}
+                                </div>
+                              `
+                            : ''
+                    }
+
+                    ${
+                        payment.account_number
+                            ? `
+                                <div class="text-muted">
+                                    ${escapeHtml(
+                                        payment.account_number
+                                    )}
+                                </div>
+                              `
+                            : ''
+                    }
+
+                    ${
+                        payment.transaction_id
+                            ? `
+                                <div class="text-muted">
+                                    TXN:
+                                    ${escapeHtml(
+                                        payment.transaction_id
+                                    )}
+                                </div>
+                              `
+                            : ''
+                    }
+
+                </div>
+            `;
+        }
+
+
+        return `
+            <span class="text-muted small">
+                No additional details
+            </span>
+        `;
+    }
+
+
+    /* =========================================================
+       SUCCESS MESSAGE
+    ========================================================= */
+
+    function showDeliverySuccess() {
+
+        const message =
+            document.createElement(
+                'div'
+            );
+
+
+        message.className =
+            'alert alert-success mt-3';
+
+
+        message.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>
+            Delivery saved successfully.
+        `;
+
+
+        $deliveriesContainer
+            .prepend(message);
+
+
+        setTimeout(
+            () => message.remove(),
+            4000
+        );
+    }
+
+
+    /* =========================================================
+       DONE BUTTON
+    ========================================================= */
+
+    $btnDone.addEventListener(
+        'click',
+        async function () {
+
+            const predictId =
+                $predict.value.trim();
+
+
+            if (!predictId) {
+                return;
+            }
+
+
+            if (
+                !confirm(
+                    'Are you sure you want to mark this case as completed?'
+                )
+            ) {
+
+                return;
+            }
+
+
+            try {
+
+                const url =
+                    routeDone.replace(
+                        'PREDICT_ID',
+                        encodeURIComponent(
+                            predictId
+                        )
+                    );
+
+
+                const response =
+                    await fetch(
+                        url,
+                        {
+
+                            method: 'POST',
+
+                            headers: {
+
+                                'Accept':
+                                    'application/json',
+
+                                'X-CSRF-TOKEN':
+                                    csrf
+                            }
+
+                        }
+                    );
+
+
+                if (!response.ok) {
+
+                    const text =
+                        await response.text();
+
+                    throw new Error(
+                        text ||
+                        'Failed to close case.'
+                    );
+                }
+
+
+                caseClosed = true;
+
+
+                $caseClosedBadge
+                    .classList
+                    .remove('d-none');
+
+
+                $btnNewDelivery
+                    .classList
+                    .add('d-none');
+
+
+                $deliveriesContainer
+                    .querySelectorAll(
+                        '[data-delivery-draft="1"]'
+                    )
+                    .forEach(
+                        card => card.remove()
+                    );
+
+
+                alert(
+                    'Case marked as completed.'
+                );
+
+
+            } catch (error) {
+
+                console.error(error);
+
+                alert(
+                    error.message ||
+                    'Failed to complete case.'
+                );
+            }
+
+        }
+    );
+
+
+})();
+</script>
+
 @endpush
+
 @endsection

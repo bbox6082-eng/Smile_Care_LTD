@@ -45,15 +45,54 @@
                         @foreach($mrs as $mr)
                         <tr>
                             <td class="px-4 py-3">
-                                <div class="d-flex align-items-center">
-                                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                            <div class="d-flex align-items-center">
+
+                                @if(!empty($mr->photo))
+
+                                    <img
+                                        src="{{ asset('storage/' . $mr->photo) }}"
+                                        alt="{{ $mr->name }}"
+                                        class="rounded-circle me-3"
+                                        style="
+                                            width: 48px;
+                                            height: 48px;
+                                            object-fit: cover;
+                                            border: 2px solid #e9ecef;
+                                            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+                                        "
+                                    >
+
+                                @else
+
+                                    <div
+                                        class="bg-primary bg-opacity-10 text-primary rounded-circle
+                                            d-flex align-items-center justify-content-center me-3"
+                                        style="
+                                            width: 48px;
+                                            height: 48px;
+                                        "
+                                    >
                                         <i class="fas fa-user"></i>
                                     </div>
-                                    <div>
-                                        <div class="fw-bold">{{ $mr->name }}</div>
+
+                                @endif
+
+                                <div>
+
+                                    <div class="fw-bold">
+                                        {{ $mr->name }}
                                     </div>
+
+                                    @if($mr->email)
+                                        <div class="text-muted small">
+                                            {{ $mr->email }}
+                                        </div>
+                                    @endif
+
                                 </div>
-                            </td>
+
+                            </div>
+                        </td>
                             <td class="py-3">
                                 @if($mr->phone)
                                     <div class="text-muted small"><i class="fas fa-phone me-1"></i>{{ $mr->phone }}</div>

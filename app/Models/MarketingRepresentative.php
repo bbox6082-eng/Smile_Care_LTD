@@ -13,5 +13,6 @@ class MarketingRepresentative extends Model
         'blood_group',
         'address',
         'emergency_contact',
+        'photo',
     ];
 }

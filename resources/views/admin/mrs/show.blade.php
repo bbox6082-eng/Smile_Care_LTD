@@ -21,9 +21,36 @@
             <div class="card-body p-4">
                 <div class="row mb-4">
                     <div class="col-12 text-center mb-4">
-                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px; font-size: 2rem;">
-                            <i class="fas fa-user"></i>
-                        </div>
+                        @if(!empty($mr->photo))
+
+                            <img
+                                src="{{ asset('storage/' . $mr->photo) }}"
+                                alt="{{ $mr->name }}"
+                                class="rounded-circle mb-3"
+                                style="
+                                    width: 120px;
+                                    height: 120px;
+                                    object-fit: cover;
+                                    border: 4px solid #ffffff;
+                                    box-shadow: 0 5px 18px rgba(0,0,0,0.12);
+                                "
+                            >
+
+                        @else
+
+                            <div
+                                class="bg-primary bg-opacity-10 text-primary rounded-circle
+                                    d-inline-flex align-items-center justify-content-center mb-3"
+                                style="
+                                    width: 120px;
+                                    height: 120px;
+                                    font-size: 2.7rem;
+                                "
+                            >
+                                <i class="fas fa-user"></i>
+                            </div>
+
+                        @endif
                         <h3 class="fw-bold mb-1">{{ $mr->name }}</h3>
                         <p class="text-muted">Marketing Representative</p>
                     </div>

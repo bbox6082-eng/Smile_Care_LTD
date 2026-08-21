@@ -5,6 +5,48 @@
 @section('content')
 <style>
     .clickable-row { cursor: pointer; }
+    .clickable-row:hover > td { filter: brightness(0.985); }
+    .serial-col {
+        width: 60px;
+        min-width: 60px;
+        text-align: center;
+        font-weight: 700;
+        color: #6b7280;
+        vertical-align: middle;
+    }
+    .case-status-badge {
+        min-width: 105px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        font-weight: 700;
+    }
+    .case-status-running {
+        background-color: #198754;
+        color: #fff;
+    }
+    .case-status-completed {
+        background-color: #0d6efd;
+        color: #fff;
+    }
+    .case-status-cancel {
+        background-color: #6c757d;
+        color: #fff;
+    }
+    .table-case-cancelled > td {
+        background-color: #f3f4f6 !important;
+    }
+    .table-case-cancelled > td:first-child {
+        box-shadow: inset 6px 0 0 0 #6b7280 !important;
+    }
+    .table thead th {
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+    .table tbody td {
+        vertical-align: middle;
+    }
     /* Stronger full-row reminder shades for quick scanning */
     .table tbody tr.table-reminder-yellow > td { background-color: #ffefb8 !important; }
     .table tbody tr.table-reminder-red > td { background-color: #ffcfd2 !important; }
@@ -111,8 +153,9 @@
                 <label for="filter_status" class="form-label mb-1">Status</label>
                 <select id="filter_status" class="form-select">
                     <option value="All" {{ ($filterStatus ?? 'All') === 'All' ? 'selected' : '' }}>All Cases</option>
-                    <option value="Active" {{ ($filterStatus ?? '') === 'Active' ? 'selected' : '' }}>Active</option>
+                    <option value="Running" {{ ($filterStatus ?? '') === 'Running' ? 'selected' : '' }}>Running</option>
                     <option value="Completed" {{ ($filterStatus ?? '') === 'Completed' ? 'selected' : '' }}>Completed</option>
+                    <option value="Cancel" {{ ($filterStatus ?? '') === 'Cancel' ? 'selected' : '' }}>Cancel</option>
                 </select>
             </div>
             <div class="col-md-2">
@@ -145,6 +188,7 @@
                 <table class="table table-hover">
                     <thead>
                             <tr>
+                                <th class="serial-col">#</th>
                                 <th>Patient</th>
                                 <th>Total Amount</th>
                                 <th>Total Paid Amount</th>
@@ -155,6 +199,7 @@
                                 <th>Payment Type</th>
                                 <th>Total Quantity Delivered</th>
                                 <th>Reminder</th>
+                                <th>Case Status</th>
                             </tr>
                         </thead>
 
@@ -258,13 +303,46 @@
 
                                     /*
                                     |--------------------------------------------------------------------------
-                                    | Patient Status
+                                    | Patient / Case Status
+                                    |--------------------------------------------------------------------------
+                                    | Running   = patient is active
+                                    | Completed = patient is inactive + plan is closed
+                                    | Cancel    = patient is inactive + plan is not closed
+                                    |
+                                    | The controller is the source of truth. The fallback below
+                                    | keeps this Blade safe while older controller code is deployed.
                                     |--------------------------------------------------------------------------
                                     */
 
                                     $patientStatus = strtolower(
                                         $payment->patient_status ?? 'unknown'
                                     );
+
+                                    $caseStatus = $payment->case_status_text ?? null;
+
+                                    if (!$caseStatus) {
+                                        if ($patientStatus === 'active') {
+                                            $caseStatus = 'Running';
+                                        } elseif ((bool) ($payment->is_closed ?? false)) {
+                                            $caseStatus = 'Completed';
+                                        } else {
+                                            $caseStatus = 'Cancel';
+                                        }
+                                    }
+
+                                    $caseStatusClass = match ($caseStatus) {
+                                        'Running' => 'case-status-running',
+                                        'Completed' => 'case-status-completed',
+                                        'Cancel' => 'case-status-cancel',
+                                        default => 'bg-secondary',
+                                    };
+
+                                    $caseStatusIcon = match ($caseStatus) {
+                                        'Running' => 'fa-play-circle',
+                                        'Completed' => 'fa-check-circle',
+                                        'Cancel' => 'fa-ban',
+                                        default => 'fa-circle',
+                                    };
 
                                     /*
                                     |--------------------------------------------------------------------------
@@ -274,13 +352,15 @@
 
                                     $rowClass = '';
 
-                                    if ($lvl === 'critical_unpaid') {
+                                    if ($caseStatus === 'Cancel') {
+                                        $rowClass = 'table-case-cancelled';
+                                    } elseif ($lvl === 'critical_unpaid') {
                                         $rowClass = 'table-reminder-critical';
                                     } elseif ($lvl === 'critical') {
                                         $rowClass = 'table-reminder-red';
                                     } elseif ($lvl === 'warning') {
                                         $rowClass = 'table-reminder-yellow';
-                                    } elseif ($lvl === 'closed') {
+                                    } elseif ($lvl === 'closed' && $caseStatus === 'Completed') {
                                         $rowClass = 'table-reminder-closed';
                                     }
                                 @endphp
@@ -289,6 +369,14 @@
                                     class="clickable-row {{ $rowClass }}"
                                     data-href="{{ route('admin.payments.plan.index') }}?predict3d_id={{ urlencode($payment->predict3d_id) }}"
                                 >
+
+                                    {{-- ==========================================================
+                                        0. SERIAL NUMBER
+                                    =========================================================== --}}
+                                    <td class="serial-col">
+                                        {{ $payment->serial_number
+                                            ?? (($payments->currentPage() - 1) * $payments->perPage() + $loop->iteration) }}
+                                    </td>
 
                                     {{-- ==========================================================
                                         1. PATIENT
@@ -477,7 +565,6 @@
                                         10. REMINDER
                                     =========================================================== --}}
                                     <td>
-
                                         <span
                                             class="badge {{ $reminderClass }} px-3 py-2"
                                             style="
@@ -489,14 +576,30 @@
                                             {{ $payment->reminder_text ?? 'No reminder' }}
                                         </span>
 
+                                        @if(!empty($payment->next_delivery_due_date) && $caseStatus === 'Running')
+                                            <div class="small text-muted mt-1">
+                                                Due:
+                                                {{ \Carbon\Carbon::parse($payment->next_delivery_due_date)->format('M d, Y') }}
+                                            </div>
+                                        @endif
+                                    </td>
+
+                                    {{-- ==========================================================
+                                        11. CASE STATUS
+                                    =========================================================== --}}
+                                    <td>
+                                        <span class="badge {{ $caseStatusClass }} case-status-badge px-3 py-2">
+                                            <i class="fas {{ $caseStatusIcon }}"></i>
+                                            {{ $caseStatus }}
+                                        </span>
                                     </td>
 
                                 </tr>
 
                             @endforeach
                         </tbody>
-                </table>
-            </div>
+                                </table>
+                            </div>
 
            
 
@@ -507,10 +610,10 @@
         @else
             <div class="text-center py-5">
                 <i class="fas fa-credit-card fa-4x text-muted mb-4"></i>
-                <h4 class="text-muted">No payments recorded</h4>
-                <p class="text-muted mb-4">Start tracking payments by recording the first transaction.</p>
+                <h4 class="text-muted">No cases found</h4>
+                <p class="text-muted mb-4">Try changing the filters or record a new case.</p>
                 <a href="{{ route('admin.payments.plan.index') }}" class="btn btn-primary btn-lg">
-                    <i class="fas fa-plus me-2"></i>Record First Payment
+                    <i class="fas fa-plus me-2"></i>Record New Case
                 </a>
             </div>
         @endif

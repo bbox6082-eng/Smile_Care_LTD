@@ -496,7 +496,7 @@ class AdminController extends Controller
                 'trace' => $e->getTraceAsString(),
                 'request_data' => $request->all(),
                 'patient_id' => $patient->id ?? 'unknown',
-                'predict3d_id' => $patient->Predict3DId ?? 'unknown'
+                                'predict3d_id' => $patient->Predict3DId ?? 'unknown'
             ]);
             
             return back()
@@ -787,7 +787,15 @@ class AdminController extends Controller
             'blood_group' => 'nullable|string|max:10',
             'address' => 'nullable|string',
             'emergency_contact' => 'nullable|string|max:20',
+
+            // MR Profile Picture
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
+
+        // Upload MR profile picture
+        if ($request->hasFile('photo')) {
+            $validated['photo'] = $request->file('photo')->store('mrs', 'public');
+        }
 
         MarketingRepresentative::create($validated);
 
@@ -809,27 +817,64 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255|unique:marketing_representatives,email,'.$mr->id,
+            'email' => 'nullable|email|max:255|unique:marketing_representatives,email,' . $mr->id,
             'phone' => 'nullable|string|max:20',
             'blood_group' => 'nullable|string|max:10',
             'address' => 'nullable|string',
             'emergency_contact' => 'nullable|string|max:20',
+
+            // MR Profile Picture
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update MR Profile Picture
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->hasFile('photo')) {
+
+            // Delete old picture
+            if (
+                !empty($mr->photo) &&
+                Storage::disk('public')->exists($mr->photo)
+            ) {
+                Storage::disk('public')->delete($mr->photo);
+            }
+
+            // Store new picture
+            $validated['photo'] = $request->file('photo')->store('mrs', 'public');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update MR Information
+        |--------------------------------------------------------------------------
+        */
 
         $mr->update($validated);
 
-        return redirect()->route('admin.mrs.index')
+        return redirect()->route('admin.mrs.show', $mr)
             ->with('success', 'Marketing Representative updated successfully.');
     }
 
     public function deleteMr(MarketingRepresentative $mr)
     {
+        // Delete profile photo from storage
+        if (
+            !empty($mr->photo) &&
+            Storage::disk('public')->exists($mr->photo)
+        ) {
+            Storage::disk('public')->delete($mr->photo);
+        }
+
+        // Delete MR record
         $mr->delete();
 
         return redirect()->route('admin.mrs.index')
             ->with('success', 'Marketing Representative deleted successfully.');
     }
-
     protected function resolveTerritoryFromNames(string $regionName, string $areaName, string $territoryName): Territory
     {
         $regionName = trim($regionName);
@@ -949,7 +994,7 @@ class AdminController extends Controller
     }
 
     public function deleteProduct(Product $product)
-    {
+     {
         // Delete image if exists
         if ($product->image && Storage::disk('public')->exists($product->image)) {
             Storage::disk('public')->delete($product->image);
@@ -1061,11 +1106,25 @@ class AdminController extends Controller
             $query->where('d.marketing_representative_name', $request->mr_name);
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Case Status Filter
+        |--------------------------------------------------------------------------
+        | Running   = patient is active
+        | Completed = patient is inactive + payment plan is closed
+        | Cancel    = patient is inactive + payment plan is not closed
+        |--------------------------------------------------------------------------
+        */
         $status = $request->get('status', 'All');
-        if ($status === 'Active') {
-            $query->where('payment_plans.is_closed', false);
+
+        if ($status === 'Running') {
+            $query->where('pat.status', 'active');
         } elseif ($status === 'Completed') {
-            $query->where('payment_plans.is_closed', true);
+            $query->where('pat.status', 'inactive')
+                  ->where('payment_plans.is_closed', true);
+        } elseif ($status === 'Cancel') {
+            $query->where('pat.status', 'inactive')
+                  ->where('payment_plans.is_closed', false);
         }
 
         return $query;
@@ -1104,135 +1163,117 @@ class AdminController extends Controller
                 ])
             ->paginate(10)->withQueryString();
 
-        $payments->getCollection()->transform(function ($row) {
+        $payments->getCollection()->transform(function ($row, $index) use ($payments) {
+
+            // Pagination-aware serial number for the All Cases table.
+            $row->serial_number = (($payments->currentPage() - 1) * $payments->perPage()) + $index + 1;
 
             $row->payment_date = $row->latest_payment_date;
             $row->payment_method = $row->latest_payment_method ?: $row->plan_payment_method;
 
             /*
             |--------------------------------------------------------------------------
-            | Reminder
+            | Case Status
+            |--------------------------------------------------------------------------
+            | Running   = patient active
+            | Completed = patient inactive + all aligners delivered + fully paid
+            | Cancel    = patient inactive but fulfillment is incomplete
             |--------------------------------------------------------------------------
             */
-            $row->reminder_level = 'normal';
-            $row->reminder_text = 'No delivery recorded yet';
-            $row->row_class = '';
 
-            if ((bool) ($row->is_closed ?? false)) {
-                $row->reminder_level = 'closed';
-                $row->reminder_text = 'Case closed';
-                $row->row_class = 'table-reminder-closed';
-            } elseif (!empty($row->latest_delivery_date)) {
+            $totalUpperCases = (int) ($row->total_upper_cases ?? 0);
+            $totalLowerCases = (int) ($row->total_lower_cases ?? 0);
+            $totalUpperDelivered = (int) ($row->total_upper_delivered ?? 0);
+            $totalLowerDelivered = (int) ($row->total_lower_delivered ?? 0);
+            $remainingAmount = max(0, (float) ($row->remaining_amount ?? 0));
 
-                $lastDeliveryDate = Carbon::parse($row->latest_delivery_date)->startOfDay();
+            $allUpperDelivered = $totalUpperDelivered >= $totalUpperCases;
+            $allLowerDelivered = $totalLowerDelivered >= $totalLowerCases;
+            $allAlignersDelivered = $allUpperDelivered && $allLowerDelivered;
+            $fullyPaid = $remainingAmount <= 0.01;
 
-                $upper = (int) ($row->latest_upper_delivered ?? 0);
-                $lower = (int) ($row->latest_lower_delivered ?? 0);
-
-                $maxCases = max($upper, $lower);
-
-                $daysPerAligner = \Cache::get('days_per_aligner', 15);
-
-                $cycleDays = $maxCases * $daysPerAligner;
-
-                $nextDue = $lastDeliveryDate->copy()->addDays($cycleDays);
-
-                $daysLeft = Carbon::today()->diffInDays($nextDue, false);
-
-                $row->next_delivery_due_date = $nextDue->toDateString();
-                $row->next_delivery_days_left = $daysLeft;
-
-                $latestDeliveryPaid = (float) ($row->latest_delivery_paid_amount ?? 0);
-
-                if ($latestDeliveryPaid <= 0 && $maxCases > 0) {
-
-                    $row->reminder_level = 'critical_unpaid';
-                    $row->row_class = 'table-reminder-critical';
-                    $row->reminder_text = 'Unpaid delivery - immediate follow-up required';
-
-                } elseif ($daysLeft <= 7) {
-
-                    $row->reminder_level = 'critical';
-                    $row->row_class = 'table-reminder-red';
-                    $row->reminder_text = $daysLeft < 0
-                        ? 'Delivery overdue by '.abs($daysLeft).' day(s)'
-                        : 'Delivery due in '.$daysLeft.' day(s)';
-
-                } elseif ($daysLeft <= 15) {
-
-                    $row->reminder_level = 'warning';
-                    $row->row_class = 'table-reminder-yellow';
-                    $row->reminder_text = 'Prepare next delivery in '.$daysLeft.' day(s)';
-
-                } else {
-
-                    $row->reminder_level = 'normal';
-                    $row->reminder_text = 'Next delivery due on '.$nextDue->format('M d, Y');
-
-                }
+            if ($row->patient_status === 'active') {
+                $row->case_status_level = 'success';
+                $row->case_status_text = 'Running';
+            } elseif ($allAlignersDelivered && $fullyPaid) {
+                $row->case_status_level = 'closed';
+                $row->case_status_text = 'Completed';
+            } else {
+                $row->case_status_level = 'critical';
+                $row->case_status_text = 'Cancel';
             }
 
             /*
             |--------------------------------------------------------------------------
-            | Case Status
+            | Reminder
+            |--------------------------------------------------------------------------
+            | 1 Upper + 1 Lower = 1 complete aligner set.
+            | The next delivery deadline is calculated from the latest delivery:
+            | complete sets delivered in that delivery x days per set.
             |--------------------------------------------------------------------------
             */
 
-            $row->case_status_level = 'success';
-            $row->case_status_text = 'Case Start';
+            $row->reminder_level = 'normal';
+            $row->reminder_text = 'No delivery recorded yet';
+            $row->row_class = '';
+            $row->next_delivery_due_date = null;
+            $row->next_delivery_days_left = null;
 
-            $totalCases =
-                (int)$row->total_upper_cases +
-                (int)$row->total_lower_cases;
+            if ($row->case_status_text === 'Completed') {
+                $row->reminder_level = 'closed';
+                $row->reminder_text = 'Case completed';
+                $row->row_class = 'table-reminder-closed';
+            } elseif ($row->case_status_text === 'Cancel') {
+                $row->reminder_level = 'closed';
+                $row->reminder_text = 'Case cancelled';
+                $row->row_class = 'table-reminder-closed';
+            } elseif (!empty($row->latest_delivery_date)) {
+                $lastDeliveryDate = Carbon::parse($row->latest_delivery_date)->startOfDay();
 
-            $totalDelivered =
-                (int)$row->total_upper_delivered +
-                (int)$row->total_lower_delivered;
+                $latestUpper = (int) ($row->latest_upper_delivered ?? 0);
+                $latestLower = (int) ($row->latest_lower_delivered ?? 0);
 
-            $totalPaid = (float)$row->total_paid;
+                // 1 upper + 1 lower = 1 set. Use the smaller side so an
+                // incomplete upper/lower pair never creates an extra cycle.
+                $setsDelivered = min($latestUpper, $latestLower);
+                $daysPerSet = max(1, (int) \Cache::get('days_per_aligner', 15));
+                $cycleDays = $setsDelivered * $daysPerSet;
 
-            $pricePerAligner = $totalCases > 0
-                ? ((float)$row->total_amount / $totalCases)
-                : 0;
+                // If a delivery contains payment only / no complete set,
+                // do not create a same-day delivery deadline.
+                if ($setsDelivered > 0) {
+                    $nextDue = $lastDeliveryDate->copy()->addDays($cycleDays);
+                    $daysLeft = Carbon::today()->diffInDays($nextDue, false);
 
-            $expectedPayment = $totalDelivered * $pricePerAligner;
+                    $row->next_delivery_due_date = $nextDue->toDateString();
+                    $row->next_delivery_days_left = $daysLeft;
 
-            if ($row->patient_status === 'inactive') {
+                    $latestDeliveryPaid = (float) ($row->latest_delivery_paid_amount ?? 0);
 
-                if ((float)$row->remaining_amount <= 0) {
-
-                    $row->case_status_level = 'closed';
-                    $row->case_status_text = 'Case Completed';
-
+                    if ($latestDeliveryPaid <= 0) {
+                        $row->reminder_level = 'critical_unpaid';
+                        $row->row_class = 'table-reminder-critical';
+                        $row->reminder_text = 'Unpaid delivery - immediate follow-up required';
+                    } elseif ($daysLeft < 0) {
+                        $row->reminder_level = 'critical';
+                        $row->row_class = 'table-reminder-red';
+                        $row->reminder_text = 'Delivery overdue by ' . abs($daysLeft) . ' day(s)';
+                    } elseif ($daysLeft <= 7) {
+                        $row->reminder_level = 'critical';
+                        $row->row_class = 'table-reminder-red';
+                        $row->reminder_text = 'Delivery due in ' . $daysLeft . ' day(s)';
+                    } elseif ($daysLeft <= 15) {
+                        $row->reminder_level = 'warning';
+                        $row->row_class = 'table-reminder-yellow';
+                        $row->reminder_text = 'Prepare next delivery in ' . $daysLeft . ' day(s)';
+                    } else {
+                        $row->reminder_level = 'normal';
+                        $row->reminder_text = 'Next delivery due on ' . $nextDue->format('M d, Y');
+                    }
                 } else {
-
-                    $row->case_status_level = 'critical';
-                    $row->case_status_text = 'Delivery Completed - Payment Due';
-
-                }
-
-            } else {
-
-                if ($totalDelivered == 0) {
-
-                    $row->case_status_level = 'success';
-                    $row->case_status_text = 'Payment Start';
-
-                } elseif (abs($expectedPayment - $totalPaid) < 0.01) {
-
-                    $row->case_status_level = 'warning';
-                    $row->case_status_text = 'Payment & Delivery Ratio Equal';
-
-                } elseif ($totalPaid < $expectedPayment) {
-
-                    $row->case_status_level = 'critical';
-                    $row->case_status_text = 'Payment Due';
-
-                } else {
-
-                    $row->case_status_level = 'success';
-                    $row->case_status_text = 'Payment Start';
-
+                    $row->reminder_level = 'warning';
+                    $row->row_class = 'table-reminder-yellow';
+                    $row->reminder_text = 'No complete aligner set in latest delivery';
                 }
             }
 
@@ -1450,8 +1491,7 @@ class AdminController extends Controller
             ],
         ]);
     }
-
-    public function addPaymentPlanDelivery(Request $request, string $predict3dId)
+     public function addPaymentPlanDelivery(Request $request, string $predict3dId)
     {
         $data = $request->validate([
             'upper_delivered' => 'required|integer|min:0',
@@ -1463,164 +1503,566 @@ class AdminController extends Controller
 
             'total_amount' => 'nullable|numeric|min:0',
 
+            // Bank transfer
             'bank_name' => 'nullable|string|max:100',
             'branch_name' => 'nullable|string|max:100',
             'account_name' => 'nullable|string|max:100',
             'account_number' => 'nullable|string|max:100',
 
+            // Mobile banking
             'mobile_provider' => 'nullable|string|max:100',
             'transaction_id' => 'nullable|string|max:100',
         ]);
 
         $patient = Patient::where('Predict3DId', $predict3dId)->first();
+
         if (!$patient) {
-            return response()->json(['message' => 'Patient not found'], 404);
+            return response()->json([
+                'message' => 'Patient not found.'
+            ], 404);
         }
 
-        $plan = PaymentPlan::firstOrNew(['predict3d_id' => $predict3dId]);
+        $plan = PaymentPlan::firstOrNew([
+            'predict3d_id' => $predict3dId
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Closed Case Protection
+        |--------------------------------------------------------------------------
+        */
+
+        if ($plan->exists && (bool) $plan->is_closed) {
+            return response()->json([
+                'message' => 'This case is already completed and cannot receive any further delivery or payment.'
+            ], 422);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create New Payment Plan
+        |--------------------------------------------------------------------------
+        */
+
         if (!$plan->exists) {
+
             $plan->predict3d_id = $predict3dId;
+
             $plan->total_amount = (float) ($data['total_amount'] ?? 0);
+
             $plan->payment_method = $data['payment_method'];
+
             $plan->is_installment = true;
+
             $plan->next_payment_date = null;
+
             $plan->remaining_amount = (float) ($data['total_amount'] ?? 0);
+
             $plan->is_closed = false;
+
             $plan->created_by = auth()->id();
+
             $plan->save();
-        } elseif (array_key_exists('total_amount', $data) && $data['total_amount'] !== null) {
-            if ((bool) $plan->is_closed) {
-                return response()->json(['message' => 'This case is closed. No further delivery can be added.'], 422);
-            }
-            // Respect admin-entered total amount from UI when saving a delivery.
+
+        } elseif (
+            array_key_exists('total_amount', $data)
+            && $data['total_amount'] !== null
+        ) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Update Total Amount From Admin UI
+            |--------------------------------------------------------------------------
+            */
+
             $enteredTotal = (float) $data['total_amount'];
+
+            $existingPaid = (float) PaymentPlanPayment::where(
+                'payment_plan_id',
+                $plan->id
+            )->sum('amount');
+
+            /*
+            |--------------------------------------------------------------------------
+            | Do Not Allow New Total To Be Less Than Already Paid
+            |--------------------------------------------------------------------------
+            */
+
+            if ($enteredTotal < $existingPaid) {
+                return response()->json([
+                    'message' =>
+                        'The total amount cannot be less than the amount already paid. ' .
+                        'Already paid: BDT ' .
+                        number_format($existingPaid, 2)
+                ], 422);
+            }
+
             $plan->total_amount = $enteredTotal;
+            $plan->save();
         }
 
-        if ((bool) $plan->is_closed) {
-            return response()->json(['message' => 'This case is closed. No further delivery can be added.'], 422);
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | Existing Deliveries
+        |--------------------------------------------------------------------------
+        */
 
-        $existingDeliveries = PaymentPlanDelivery::where('payment_plan_id', $plan->id)->get();
+        $existingDeliveries = PaymentPlanDelivery::where(
+            'payment_plan_id',
+            $plan->id
+        )->get();
+
         $deliveredUpper = (int) $existingDeliveries->sum('upper_delivered');
         $deliveredLower = (int) $existingDeliveries->sum('lower_delivered');
+
         $totalUpper = (int) ($patient->UpperCases ?? 0);
         $totalLower = (int) ($patient->LowerCases ?? 0);
 
         $newUpper = (int) $data['upper_delivered'];
         $newLower = (int) $data['lower_delivered'];
 
-        // Prevent completely empty delivery records.
-        // A delivery is valid if it contains at least one case
-        // or a payment amount.
+        $paidAmount = (float) $data['paid_amount'];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Prevent Completely Empty Delivery
+        |--------------------------------------------------------------------------
+        */
+
         if (
             $newUpper === 0 &&
             $newLower === 0 &&
-            (float) $data['paid_amount'] === 0.0
+            $paidAmount === 0.0
         ) {
             return response()->json([
                 'message' => 'Enter at least one delivered case or a paid amount.'
             ], 422);
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Prevent Upper Case Over-Delivery
+        |--------------------------------------------------------------------------
+        */
+
         if ($deliveredUpper + $newUpper > $totalUpper) {
-            return response()->json(['message' => 'Upper delivered exceeds total upper cases'], 422);
+            return response()->json([
+                'message' =>
+                    'Upper delivered exceeds total upper cases. ' .
+                    'Remaining upper cases: ' .
+                    max(0, $totalUpper - $deliveredUpper)
+            ], 422);
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Prevent Lower Case Over-Delivery
+        |--------------------------------------------------------------------------
+        */
+
         if ($deliveredLower + $newLower > $totalLower) {
-            return response()->json(['message' => 'Lower delivered exceeds total lower cases'], 422);
+            return response()->json([
+                'message' =>
+                    'Lower delivered exceeds total lower cases. ' .
+                    'Remaining lower cases: ' .
+                    max(0, $totalLower - $deliveredLower)
+            ], 422);
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Calculate Existing Paid Amount
+        |--------------------------------------------------------------------------
+        */
 
-        // Save / update reusable bank branch account information
-        if (
-            $data['payment_method'] === 'bank_transfer' &&
-            !empty($data['bank_name']) &&
-            !empty($data['branch_name']) &&
-            !empty($data['account_name']) &&
-            !empty($data['account_number'])
-        ) {
-            $bank = \App\Models\Bank::where(
-                'bank_name',
-                trim($data['bank_name'])
-            )->first();
+        $existingPaid = (float) PaymentPlanPayment::where(
+            'payment_plan_id',
+            $plan->id
+        )->sum('amount');
 
-            if ($bank) {
-                $branch = BankBranch::where('bank_id', $bank->id)
-                    ->whereRaw(
-                        'LOWER(TRIM(branch_name)) = ?',
-                        [strtolower(trim($data['branch_name']))]
-                    )
-                    ->first();
+        $totalAmount = (float) $plan->total_amount;
 
-                if ($branch) {
-                    $branch->account_name = trim($data['account_name']);
-                    $branch->account_number = trim($data['account_number']);
-                    $branch->save();
+        $remainingBeforePayment = max(
+            0,
+            $totalAmount - $existingPaid
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Prevent Overpayment
+        |--------------------------------------------------------------------------
+        */
+
+        if ($paidAmount > $remainingBeforePayment) {
+
+            return response()->json([
+                'message' =>
+                    'Payment exceeds the remaining balance. ' .
+                    'Maximum allowed payment is BDT ' .
+                    number_format($remainingBeforePayment, 2),
+
+                'state' => [
+                    'total_amount' => $totalAmount,
+                    'already_paid' => $existingPaid,
+                    'remaining_amount' => $remainingBeforePayment,
+                ]
+            ], 422);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Database Transaction
+        |--------------------------------------------------------------------------
+        */
+
+        try {
+
+            \DB::transaction(function () use (
+                $data,
+                $plan,
+                $patient,
+                $newUpper,
+                $newLower,
+                $paidAmount
+            ) {
+
+                /*
+                |--------------------------------------------------------------------------
+                | Save / Update Reusable Bank Branch Account Information
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    $data['payment_method'] === 'bank_transfer' &&
+                    !empty($data['bank_name']) &&
+                    !empty($data['branch_name']) &&
+                    !empty($data['account_name']) &&
+                    !empty($data['account_number'])
+                ) {
+
+                    $bank = \App\Models\Bank::where(
+                        'bank_name',
+                        trim($data['bank_name'])
+                    )->first();
+
+                    if ($bank) {
+
+                        $branch = BankBranch::where(
+                            'bank_id',
+                            $bank->id
+                        )
+                            ->whereRaw(
+                                'LOWER(TRIM(branch_name)) = ?',
+                                [
+                                    strtolower(
+                                        trim($data['branch_name'])
+                                    )
+                                ]
+                            )
+                            ->first();
+
+                        if ($branch) {
+
+                            $branch->account_name =
+                                trim($data['account_name']);
+
+                            $branch->account_number =
+                                trim($data['account_number']);
+
+                            $branch->save();
+                        }
+                    }
                 }
-            }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Save Delivery
+                |--------------------------------------------------------------------------
+                */
+
+                PaymentPlanDelivery::create([
+                    'payment_plan_id' => $plan->id,
+                    'upper_delivered' => $newUpper,
+                    'lower_delivered' => $newLower,
+                    'paid_amount' => $paidAmount,
+                    'delivery_date' => $data['delivery_date'],
+                    'created_by' => auth()->id(),
+                ]);
+
+                /*
+                |--------------------------------------------------------------------------
+                | Save Payment
+                |--------------------------------------------------------------------------
+                */
+
+                if ($paidAmount > 0) {
+
+                    PaymentPlanPayment::create([
+                        'payment_plan_id' => $plan->id,
+                        'amount' => $paidAmount,
+                        'payment_date' => $data['delivery_date'],
+                        'payment_method' => $data['payment_method'],
+
+                        'bank_name' =>
+                            $data['bank_name'] ?? null,
+
+                        'branch_name' =>
+                            $data['branch_name'] ?? null,
+
+                        'account_name' =>
+                            $data['account_name'] ?? null,
+
+                        'account_number' =>
+                            $data['account_number'] ?? null,
+
+                        'mobile_provider' =>
+                            $data['mobile_provider'] ?? null,
+
+                        'transaction_id' =>
+                            $data['transaction_id'] ?? null,
+
+                        'created_by' => auth()->id(),
+                    ]);
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Recalculate Payment
+                |--------------------------------------------------------------------------
+                */
+
+                $totalPaid = (float) PaymentPlanPayment::where(
+                    'payment_plan_id',
+                    $plan->id
+                )->sum('amount');
+
+                $remainingAmount = max(
+                    0,
+                    (float) $plan->total_amount - $totalPaid
+                );
+
+                $plan->payment_method =
+                    $data['payment_method'];
+
+                $plan->remaining_amount =
+                    $remainingAmount;
+
+                /*
+                |--------------------------------------------------------------------------
+                | Recalculate Delivered Cases
+                |--------------------------------------------------------------------------
+                */
+
+                $allDeliveries = PaymentPlanDelivery::where(
+                    'payment_plan_id',
+                    $plan->id
+                )->get();
+
+                $totalUpperDelivered =
+                    (int) $allDeliveries->sum('upper_delivered');
+
+                $totalLowerDelivered =
+                    (int) $allDeliveries->sum('lower_delivered');
+
+                $totalUpper =
+                    (int) ($patient->UpperCases ?? 0);
+
+                $totalLower =
+                    (int) ($patient->LowerCases ?? 0);
+
+                /*
+                |--------------------------------------------------------------------------
+                | Completion Conditions
+                |--------------------------------------------------------------------------
+                |
+                | Case is completed ONLY when:
+                |
+                | 1. All upper aligners delivered
+                | 2. All lower aligners delivered
+                | 3. Full payment completed
+                |
+                */
+
+                $allUpperDelivered =
+                    $totalUpperDelivered >= $totalUpper;
+
+                $allLowerDelivered =
+                    $totalLowerDelivered >= $totalLower;
+
+                $fullyPaid =
+                    $remainingAmount <= 0.01;
+
+                if (
+                    $allUpperDelivered &&
+                    $allLowerDelivered &&
+                    $fullyPaid
+                ) {
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Close Payment Plan
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $plan->is_closed = true;
+
+                    $plan->remaining_amount = 0;
+
+                    $plan->next_payment_date = null;
+
+                    $plan->save();
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Mark Patient Inactive
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if ($patient->status !== 'inactive') {
+
+                        $patient->status = 'inactive';
+
+                        $patient->save();
+                    }
+
+                } else {
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Case Still Running
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $plan->is_closed = false;
+
+                    $plan->save();
+                }
+            });
+
+        } catch (\Throwable $e) {
+
+            return response()->json([
+                'message' =>
+                    'Unable to save delivery/payment. Please try again.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
 
-        // Save delivery
-        PaymentPlanDelivery::create([
-            'payment_plan_id' => $plan->id,
-            'upper_delivered' => $newUpper,
-            'lower_delivered' => $newLower,
-            'paid_amount' => (float) $data['paid_amount'],
-            'delivery_date' => $data['delivery_date'],
-            'created_by' => auth()->id(),
-        ]);
+        /*
+        |--------------------------------------------------------------------------
+        | Reload Latest Data
+        |--------------------------------------------------------------------------
+        */
 
-        // Record payment (if any)
-        if ((float) $data['paid_amount'] > 0) {
-            PaymentPlanPayment::create([
-                'payment_plan_id' => $plan->id,
-                'amount' => (float) $data['paid_amount'],
-                'payment_date' => $data['delivery_date'],
-                'payment_method' => $data['payment_method'],
+        $plan->refresh();
 
-                'bank_name' => $data['bank_name'] ?? null,
-                'branch_name' => $data['branch_name'] ?? null,
-                'account_name' => $data['account_name'] ?? null,
-                'account_number' => $data['account_number'] ?? null,
+        $payments = PaymentPlanPayment::where(
+            'payment_plan_id',
+            $plan->id
+        )
+            ->orderBy('payment_date')
+            ->get();
 
-                'mobile_provider' => $data['mobile_provider'] ?? null,
-                'transaction_id' => $data['transaction_id'] ?? null,
+        $deliveries = PaymentPlanDelivery::where(
+            'payment_plan_id',
+            $plan->id
+        )
+            ->orderBy('delivery_date')
+            ->get();
 
-                'created_by' => auth()->id(),
-            ]);
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | Final Case Counts
+        |--------------------------------------------------------------------------
+        */
 
-        // Update remaining on plan
-        $paid = (float) PaymentPlanPayment::where('payment_plan_id', $plan->id)->sum('amount');
-        $plan->payment_method = $data['payment_method'];
-        $plan->remaining_amount = max(0, (float) $plan->total_amount - $paid);
-        $plan->save();
+        $deliveredUpperFinal =
+            (int) $deliveries->sum('upper_delivered');
 
-        // If fully paid, mark patient inactive
-        if ((float) $plan->remaining_amount === 0.0) {
-            if ($patient->status !== 'inactive') {
-                $patient->status = 'inactive';
-                $patient->save();
-            }
-        }
+        $deliveredLowerFinal =
+            (int) $deliveries->sum('lower_delivered');
 
-        $deliveries = PaymentPlanDelivery::where('payment_plan_id', $plan->id)->orderBy('delivery_date')->get();
-        $deliveredUpper2 = (int) $deliveries->sum('upper_delivered');
-        $deliveredLower2 = (int) $deliveries->sum('lower_delivered');
+        $remainingUpper =
+            max(
+                0,
+                $totalUpper - $deliveredUpperFinal
+            );
+
+        $remainingLower =
+            max(
+                0,
+                $totalLower - $deliveredLowerFinal
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Final Payment State
+        |--------------------------------------------------------------------------
+        */
+
+        $totalPaidFinal =
+            (float) $payments->sum('amount');
+
+        $remainingAmountFinal =
+            max(
+                0,
+                (float) $plan->total_amount - $totalPaidFinal
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Response
+        |--------------------------------------------------------------------------
+        */
 
         return response()->json([
             'success' => true,
+
+            'message' => $plan->is_closed
+                ? 'Delivery and payment saved. Case completed successfully.'
+                : 'Delivery and payment saved successfully.',
+
             'plan' => $plan,
-            'payments' => PaymentPlanPayment::where('payment_plan_id', $plan->id)->orderBy('payment_date')->get(),
+
+            'payments' => $payments,
+
             'deliveries' => $deliveries,
+
             'cases' => [
                 'total_upper' => $totalUpper,
                 'total_lower' => $totalLower,
-                'delivered_upper' => $deliveredUpper2,
-                'delivered_lower' => $deliveredLower2,
-                'remaining_upper' => max(0, $totalUpper - $deliveredUpper2),
-                'remaining_lower' => max(0, $totalLower - $deliveredLower2),
+
+                'delivered_upper' =>
+                    $deliveredUpperFinal,
+
+                'delivered_lower' =>
+                    $deliveredLowerFinal,
+
+                'remaining_upper' =>
+                    $remainingUpper,
+
+                'remaining_lower' =>
+                    $remainingLower,
             ],
+
+            'payment' => [
+                'total_amount' =>
+                    (float) $plan->total_amount,
+
+                'total_paid' =>
+                    $totalPaidFinal,
+
+                'remaining_amount' =>
+                    $remainingAmountFinal,
+            ],
+
+            'is_closed' =>
+                (bool) $plan->is_closed,
+
+            'case_status' =>
+                $plan->is_closed
+                    ? 'Completed'
+                    : 'Running',
         ]);
     }
 
@@ -1658,6 +2100,8 @@ class AdminController extends Controller
             ], 422);
         }
 
+        // A case becomes Completed only after all aligners are delivered
+        // and the full payment amount has been settled.
         $plan->is_closed = true;
         $plan->save();
 
@@ -1672,7 +2116,7 @@ class AdminController extends Controller
         ]);
     }
 
-    public function savePaymentPlan(Request $request, string $predict3dId)
+   public function savePaymentPlan(Request $request, string $predict3dId)
     {
         $data = $request->validate([
             'total_amount' => 'required|numeric|min:0',
@@ -1680,126 +2124,179 @@ class AdminController extends Controller
             'is_installment' => 'required|boolean',
             'current_payment_amount' => 'nullable|numeric|min:0',
             'current_payment_date' => 'nullable|date',
-            // When installment, next payment date is mandatory
             'next_payment_date' => 'required_if:is_installment,1|date',
         ], [
-            'next_payment_date.required_if' => 'Next payment date is required when installment is selected.',
+            'next_payment_date.required_if' =>
+                'Next payment date is required when installment is selected.',
         ]);
 
-        $plan = PaymentPlan::firstOrNew(['predict3d_id' => $predict3dId]);
+        $plan = PaymentPlan::firstOrNew([
+            'predict3d_id' => $predict3dId
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Existing closed plan
+        |--------------------------------------------------------------------------
+        */
+
         if ($plan->exists && (bool) $plan->is_closed) {
-            return response()->json(['message' => 'This case is closed and cannot be edited.'], 422);
+            return response()->json([
+                'message' => 'This payment plan is already completed and cannot receive additional payments.'
+            ], 422);
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Existing paid amount
+        |--------------------------------------------------------------------------
+        */
+
+        $existingPaid = 0;
+
+        if ($plan->exists) {
+            $existingPaid = (float) PaymentPlanPayment::where(
+                'payment_plan_id',
+                $plan->id
+            )->sum('amount');
+        }
+
+        $currentPaid = (float) ($data['current_payment_amount'] ?? 0);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Prevent overpayment
+        |--------------------------------------------------------------------------
+        */
+
+        $newTotalAmount = (float) $data['total_amount'];
+
+        $remainingBeforePayment = max(
+            0,
+            $newTotalAmount - $existingPaid
+        );
+
+        if ($currentPaid > $remainingBeforePayment) {
+            return response()->json([
+                'message' =>
+                    'Payment exceeds the remaining balance. Maximum allowed payment is BDT '
+                    . number_format($remainingBeforePayment, 2)
+            ], 422);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Save payment plan
+        |--------------------------------------------------------------------------
+        */
+
         $plan->predict3d_id = $predict3dId;
-        $plan->total_amount = $data['total_amount'];
+        $plan->total_amount = $newTotalAmount;
         $plan->payment_method = $data['payment_method'];
         $plan->is_installment = (bool) $data['is_installment'];
         $plan->next_payment_date = $data['next_payment_date'] ?? null;
-
-        // Compute remaining amount: total - sum(payments) - optionally current payment
-        $existingPaid = 0;
-        if ($plan->exists) {
-            $existingPaid = (float) PaymentPlanPayment::where('payment_plan_id', $plan->id)->sum('amount');
-        }
-        $currentPaid = (float) ($data['current_payment_amount'] ?? 0);
-        $plan->remaining_amount = max(0, (float) $plan->total_amount - $existingPaid - $currentPaid);
         $plan->created_by = auth()->id();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Remaining amount before current payment
+        |--------------------------------------------------------------------------
+        */
+
+        $plan->remaining_amount = max(
+            0,
+            $newTotalAmount - $existingPaid
+        );
+
         $plan->save();
 
-        // If plan is now fully paid, mark patient as inactive
-        if ((float) $plan->remaining_amount === 0.0) {
-            if ($plan->predict3d_id) {
-                $p = Patient::where('Predict3DId', $plan->predict3d_id)->first();
-                if ($p && $p->status !== 'inactive') {
-                    $p->status = 'inactive';
-                    $p->save();
-                }
-            }
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | Record current payment
+        |--------------------------------------------------------------------------
+        */
 
-        // If there is a current payment amount, record it
         if ($currentPaid > 0) {
+
             PaymentPlanPayment::create([
                 'payment_plan_id' => $plan->id,
                 'amount' => $currentPaid,
-                'payment_date' => $data['current_payment_date'] ?? now()->toDateString(),
+                'payment_date' =>
+                    $data['current_payment_date']
+                    ?? now()->toDateString(),
                 'payment_method' => $data['payment_method'],
                 'created_by' => auth()->id(),
             ]);
         }
 
-        // Recompute paid/remaining
-        $paid = (float) PaymentPlanPayment::where('payment_plan_id', $plan->id)->sum('amount');
-        $plan->remaining_amount = max(0, (float) $plan->total_amount - $paid);
-        $plan->save();
+        /*
+        |--------------------------------------------------------------------------
+        | Recalculate payment totals
+        |--------------------------------------------------------------------------
+        */
 
-        // If plan is fully paid after this installment, mark patient as inactive
-        if ((float) $plan->remaining_amount === 0.0) {
-            if ($plan->predict3d_id) {
-                $p = Patient::where('Predict3DId', $plan->predict3d_id)->first();
-                if ($p && $p->status !== 'inactive') {
-                    $p->status = 'inactive';
-                    $p->save();
-                }
-            }
-        }
+        $paid = (float) PaymentPlanPayment::where(
+            'payment_plan_id',
+            $plan->id
+        )->sum('amount');
 
-        return response()->json([
-            'success' => true,
-            'plan' => $plan,
-            'payments' => PaymentPlanPayment::where('payment_plan_id', $plan->id)->orderBy('payment_date')->get(),
-        ]);
-    }
+        $plan->remaining_amount = max(
+            0,
+            (float) $plan->total_amount - $paid
+        );
 
-    public function addInstallmentPayment(Request $request, string $predict3dId)
-    {
-        // Fetch plan first to know if this is an installment plan (create if missing)
-        $plan = PaymentPlan::where('predict3d_id', $predict3dId)->first();
-        if ($plan && (bool) $plan->is_closed) {
-            return response()->json(['message' => 'This case is closed and cannot be edited.'], 422);
-        }
-        if (!$plan) {
-            $plan = new PaymentPlan();
-            $plan->predict3d_id = $predict3dId;
-            $plan->total_amount = (float) ($request->input('total_amount') ?? $request->input('amount') ?? 0);
-            $plan->payment_method = $request->input('payment_method', 'cash');
-            $plan->is_installment = false; // default to full payment if created via this endpoint
+        /*
+        |--------------------------------------------------------------------------
+        | Automatically close when fully paid
+        |--------------------------------------------------------------------------
+        */
+
+        if ($paid >= (float) $plan->total_amount) {
+
+            $plan->remaining_amount = 0;
+            $plan->is_closed = true;
             $plan->next_payment_date = null;
-            $plan->remaining_amount = $plan->total_amount; // will be recomputed below after inserting payment
+
+            $plan->save();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Make patient inactive
+            |--------------------------------------------------------------------------
+            */
+
+            $patient = Patient::where(
+                'Predict3DId',
+                $plan->predict3d_id
+            )->first();
+
+            if ($patient) {
+                $patient->status = 'inactive';
+                $patient->save();
+            }
+
+        } else {
+
             $plan->is_closed = false;
-            $plan->created_by = auth()->id();
             $plan->save();
         }
 
-        $rules = [
-            'amount' => 'required|numeric|min:0.01',
-            'payment_date' => 'required|date',
-            'payment_method' => 'required|in:cash,card,bank_transfer,mobile_banking',
-            'next_payment_date' => ($plan->is_installment ? 'required|date' : 'nullable|date'),
-        ];
-        $messages = [
-            'next_payment_date.required' => 'Next payment date is required for installment plans.',
-        ];
-        $data = $request->validate($rules, $messages);
-
-        PaymentPlanPayment::create([
-            'payment_plan_id' => $plan->id,
-            'amount' => $data['amount'],
-            'payment_date' => $data['payment_date'],
-            'payment_method' => $data['payment_method'],
-            'created_by' => auth()->id(),
-        ]);
-
-        // Update next date and remaining
-        $plan->next_payment_date = $data['next_payment_date'] ?? $plan->next_payment_date;
-        $paid = (float) PaymentPlanPayment::where('payment_plan_id', $plan->id)->sum('amount');
-        $plan->remaining_amount = max(0, (float) $plan->total_amount - $paid);
-        $plan->save();
+        /*
+        |--------------------------------------------------------------------------
+        | Response
+        |--------------------------------------------------------------------------
+        */
 
         return response()->json([
             'success' => true,
             'plan' => $plan,
-            'payments' => PaymentPlanPayment::where('payment_plan_id', $plan->id)->orderBy('payment_date')->get(),
+
+            'payments' => PaymentPlanPayment::where(
+                'payment_plan_id',
+                $plan->id
+            )
+                ->orderBy('payment_date')
+                ->get(),
         ]);
     }
 
