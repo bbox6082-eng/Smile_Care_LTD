@@ -683,6 +683,219 @@
 
 </div>
 
+{{-- =============================================================
+     ADD BANK MODAL
+============================================================= --}}
+<div
+    class="modal fade"
+    id="addBankModal"
+    tabindex="-1"
+    aria-hidden="true"
+>
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h5 class="modal-title">
+                    <i class="fas fa-university me-2"></i>
+                    Add Bank
+                </h5>
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                ></button>
+
+            </div>
+
+
+            <div class="modal-body">
+
+                <label class="form-label">
+                    Bank Name
+                </label>
+
+                <input
+                    type="text"
+                    id="newBankName"
+                    class="form-control"
+                    placeholder="Enter bank name"
+                >
+
+                <div
+                    id="addBankError"
+                    class="text-danger small mt-2 d-none"
+                ></div>
+
+            </div>
+
+
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    data-bs-dismiss="modal"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="btnSaveBank"
+                >
+                    <i class="fas fa-save me-1"></i>
+                    Save Bank
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+{{-- =============================================================
+     ADD BRANCH MODAL
+============================================================= --}}
+<div
+    class="modal fade"
+    id="addBranchModal"
+    tabindex="-1"
+    aria-hidden="true"
+>
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h5 class="modal-title">
+                    <i class="fas fa-code-branch me-2"></i>
+                    Add Branch
+                </h5>
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                ></button>
+
+            </div>
+
+
+            <div class="modal-body">
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Bank
+                    </label>
+
+                    <input
+                        type="text"
+                        id="selectedBankName"
+                        class="form-control"
+                        readonly
+                    >
+
+                </div>
+
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Branch Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="newBranchName"
+                        class="form-control"
+                        placeholder="Enter branch name"
+                    >
+
+                </div>
+
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Account Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="newBranchAccountName"
+                        class="form-control"
+                        placeholder="Enter account name"
+                    >
+
+                </div>
+
+
+                <div>
+
+                    <label class="form-label">
+                        Account Number
+                    </label>
+
+                    <input
+                        type="text"
+                        id="newBranchAccountNumber"
+                        class="form-control"
+                        placeholder="Enter account number"
+                    >
+
+                </div>
+
+
+                <div
+                    id="addBranchError"
+                    class="text-danger small mt-2 d-none"
+                ></div>
+
+            </div>
+
+
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    data-bs-dismiss="modal"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="btnSaveBranch"
+                >
+                    <i class="fas fa-save me-1"></i>
+                    Save Branch
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
 
 {{-- =============================================================
      JAVASCRIPT STARTS HERE
@@ -2762,51 +2975,74 @@
 
 
                 {{-- =================================================
-                     BANK TRANSFER
+                    BANK TRANSFER
                 ================================================== --}}
                 <div
                     class="row g-3 mt-2 d-none js-bank-details"
                 >
 
+                    {{-- Bank Name --}}
                     <div class="col-md-3">
 
                         <label class="form-label">
                             Bank Name
                         </label>
 
-                        <select
-                            class="form-select js-bank"
-                        >
+                        <div class="input-group">
 
-                            <option value="">
-                                Select Bank
-                            </option>
+                            <select
+                                class="form-select js-bank"
+                            >
+                                <option value="">
+                                    Select Bank
+                                </option>
+                            </select>
 
-                        </select>
+                            <button
+                                type="button"
+                                class="btn btn-outline-primary js-add-bank"
+                                title="Add new bank"
+                            >
+                                <i class="fas fa-plus"></i>
+                            </button>
+
+                        </div>
 
                     </div>
 
 
+                    {{-- Branch Name --}}
                     <div class="col-md-3">
 
                         <label class="form-label">
                             Branch Name
                         </label>
 
-                        <select
-                            class="form-select js-branch"
-                            disabled
-                        >
+                        <div class="input-group">
 
-                            <option value="">
-                                Select Branch
-                            </option>
+                            <select
+                                class="form-select js-branch"
+                                disabled
+                            >
+                                <option value="">
+                                    Select Branch
+                                </option>
+                            </select>
 
-                        </select>
+                            <button
+                                type="button"
+                                class="btn btn-outline-primary js-add-branch"
+                                title="Add new branch"
+                            >
+                                <i class="fas fa-plus"></i>
+                            </button>
+
+                        </div>
 
                     </div>
 
 
+                    {{-- Account Name --}}
                     <div class="col-md-3">
 
                         <label class="form-label">
@@ -2823,6 +3059,7 @@
                     </div>
 
 
+                    {{-- Account Number --}}
                     <div class="col-md-3">
 
                         <label class="form-label">
@@ -2839,7 +3076,6 @@
                     </div>
 
                 </div>
-
 
                 {{-- =================================================
                      MOBILE BANKING
