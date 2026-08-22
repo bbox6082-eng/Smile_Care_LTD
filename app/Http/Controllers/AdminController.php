@@ -2120,7 +2120,7 @@ class AdminController extends Controller
     {
         $data = $request->validate([
             'total_amount' => 'required|numeric|min:0',
-            'payment_method' => 'required|in:cash,card,bank_transfer,mobile_banking',
+            'payment_method' => 'nullable|in:cash,card,bank_transfer,mobile_banking',
             'is_installment' => 'required|boolean',
             'current_payment_amount' => 'nullable|numeric|min:0',
             'current_payment_date' => 'nullable|date',
@@ -2192,7 +2192,7 @@ class AdminController extends Controller
 
         $plan->predict3d_id = $predict3dId;
         $plan->total_amount = $newTotalAmount;
-        $plan->payment_method = $data['payment_method'];
+        $plan->payment_method = $data['payment_method'] ?? 'cash';
         $plan->is_installment = (bool) $data['is_installment'];
         $plan->next_payment_date = $data['next_payment_date'] ?? null;
         $plan->created_by = auth()->id();
