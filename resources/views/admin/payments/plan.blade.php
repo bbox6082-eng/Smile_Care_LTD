@@ -4170,6 +4170,519 @@
     );
 
 
+    /* ============================================================
+   ADD BANK
+   ============================================================ */
+
+const addBankModal =
+    document.getElementById('addBankModal');
+
+const newBankName =
+    document.getElementById('newBankName');
+
+const addBankError =
+    document.getElementById('addBankError');
+
+const btnSaveBank =
+    document.getElementById('btnSaveBank');
+
+
+/*
+ * Open Add Bank modal
+ */
+document.addEventListener('click', function (event) {
+
+    const button =
+        event.target.closest('.js-add-bank');
+
+    if (!button) {
+        return;
+    }
+
+    newBankName.value = '';
+
+    addBankError.textContent = '';
+    addBankError.classList.add('d-none');
+
+    const modal =
+        bootstrap.Modal.getOrCreateInstance(
+            addBankModal
+        );
+
+    modal.show();
+
+    setTimeout(() => {
+        newBankName.focus();
+    }, 300);
+
+});
+
+
+/*
+ * Save Bank
+ */
+btnSaveBank.addEventListener(
+    'click',
+    async function () {
+
+        const bankName =
+            newBankName.value.trim();
+
+        addBankError.textContent = '';
+        addBankError.classList.add('d-none');
+
+
+        if (!bankName) {
+
+            addBankError.textContent =
+                'Please enter a bank name.';
+
+            addBankError.classList.remove(
+                'd-none'
+            );
+
+            newBankName.focus();
+
+            return;
+        }
+
+
+        btnSaveBank.disabled = true;
+
+
+        try {
+
+            const response =
+                await fetch(
+                    "{{ route('admin.banks.store') }}",
+                    {
+                        method: 'POST',
+
+                        headers: {
+                            'Content-Type':
+                                'application/json',
+
+                            'Accept':
+                                'application/json',
+
+                            'X-CSRF-TOKEN':
+                                '{{ csrf_token() }}'
+                        },
+
+                        body: JSON.stringify({
+                            bank_name: bankName
+                        })
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.message ||
+                    'Failed to create bank.'
+                );
+            }
+
+
+            /*
+             * Close modal
+             */
+            bootstrap.Modal
+                .getInstance(addBankModal)
+                ?.hide();
+
+
+            /*
+             * Reload all bank dropdowns
+             */
+            document
+                .querySelectorAll('.js-bank')
+                .forEach(select => {
+
+                    loadBanks(select);
+
+                });
+
+
+        } catch (error) {
+
+            console.error(
+                'Add bank error:',
+                error
+            );
+
+            addBankError.textContent =
+                error.message ||
+                'Failed to add bank.';
+
+            addBankError.classList.remove(
+                'd-none'
+            );
+
+        } finally {
+
+            btnSaveBank.disabled = false;
+
+        }
+
+    }
+);
+   /* ============================================================
+   ADD BRANCH
+   ============================================================ */
+
+const addBranchModal =
+    document.getElementById('addBranchModal');
+
+const selectedBankName =
+    document.getElementById('selectedBankName');
+
+const newBranchName =
+    document.getElementById('newBranchName');
+
+const newBranchAccountName =
+    document.getElementById(
+        'newBranchAccountName'
+    );
+
+const newBranchAccountNumber =
+    document.getElementById(
+        'newBranchAccountNumber'
+    );
+
+const addBranchError =
+    document.getElementById(
+        'addBranchError'
+    );
+
+const btnSaveBranch =
+    document.getElementById(
+        'btnSaveBranch'
+    );
+
+
+/*
+ * Open Add Branch modal
+ */
+document.addEventListener(
+    'click',
+    function (event) {
+
+        const button =
+            event.target.closest(
+                '.js-add-branch'
+            );
+
+        if (!button) {
+            return;
+        }
+
+
+        const deliveryCard =
+            button.closest(
+                '[data-delivery-draft="1"]'
+            );
+
+
+        if (!deliveryCard) {
+
+            alert(
+                'Delivery form not found.'
+            );
+
+            return;
+        }
+
+
+        const bankSelect =
+            deliveryCard.querySelector(
+                '.js-bank'
+            );
+
+
+        const bankId =
+            bankSelect?.value || '';
+
+
+        const bankName =
+            bankSelect &&
+            bankSelect.selectedIndex >= 0
+                ? bankSelect.options[
+                    bankSelect.selectedIndex
+                  ].text
+                : '';
+
+
+        if (!bankId) {
+
+            alert(
+                'Please select a bank first.'
+            );
+
+            return;
+        }
+
+
+        /*
+         * Store selected bank information
+         * on the modal.
+         */
+        addBranchModal.dataset.bankId =
+            bankId;
+
+        addBranchModal.dataset.deliveryCardId =
+            '';
+
+
+        selectedBankName.value =
+            bankName;
+
+
+        newBranchName.value = '';
+
+        newBranchAccountName.value = '';
+
+        newBranchAccountNumber.value = '';
+
+
+        addBranchError.textContent = '';
+
+        addBranchError.classList.add(
+            'd-none'
+        );
+
+
+        /*
+         * Keep reference to the delivery card.
+         */
+        addBranchModal._deliveryCard =
+            deliveryCard;
+
+
+        const modal =
+            bootstrap.Modal.getOrCreateInstance(
+                addBranchModal
+            );
+
+        modal.show();
+
+
+        setTimeout(() => {
+
+            newBranchName.focus();
+
+        }, 300);
+
+    }
+);
+
+
+/*
+ * Save Branch
+ */
+btnSaveBranch.addEventListener(
+    'click',
+    async function () {
+
+        const bankId =
+            addBranchModal.dataset.bankId;
+
+        const deliveryCard =
+            addBranchModal._deliveryCard;
+
+
+        const branchName =
+            newBranchName.value.trim();
+
+        const accountName =
+            newBranchAccountName.value.trim();
+
+        const accountNumber =
+            newBranchAccountNumber.value.trim();
+
+
+        addBranchError.textContent = '';
+
+        addBranchError.classList.add(
+            'd-none'
+        );
+
+
+        if (!bankId) {
+
+            addBranchError.textContent =
+                'Please select a bank first.';
+
+            addBranchError.classList.remove(
+                'd-none'
+            );
+
+            return;
+        }
+
+
+        if (!branchName) {
+
+            addBranchError.textContent =
+                'Please enter a branch name.';
+
+            addBranchError.classList.remove(
+                'd-none'
+            );
+
+            newBranchName.focus();
+
+            return;
+        }
+
+
+        if (!accountName) {
+
+            addBranchError.textContent =
+                'Please enter account name.';
+
+            addBranchError.classList.remove(
+                'd-none'
+            );
+
+            newBranchAccountName.focus();
+
+            return;
+        }
+
+
+        if (!accountNumber) {
+
+            addBranchError.textContent =
+                'Please enter account number.';
+
+            addBranchError.classList.remove(
+                'd-none'
+            );
+
+            newBranchAccountNumber.focus();
+
+            return;
+        }
+
+
+        btnSaveBranch.disabled = true;
+
+
+        try {
+
+            const response =
+                await fetch(
+                    "{{ route('admin.bank-branches.store') }}",
+                    {
+                        method: 'POST',
+
+                        headers: {
+                            'Content-Type':
+                                'application/json',
+
+                            'Accept':
+                                'application/json',
+
+                            'X-CSRF-TOKEN':
+                                '{{ csrf_token() }}'
+                        },
+
+                        body: JSON.stringify({
+
+                            bank_id:
+                                bankId,
+
+                            branch_name:
+                                branchName,
+
+                            account_name:
+                                accountName,
+
+                            account_number:
+                                accountNumber
+
+                        })
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.message ||
+                    'Failed to create branch.'
+                );
+            }
+
+
+            /*
+             * Close modal
+             */
+            bootstrap.Modal
+                .getInstance(addBranchModal)
+                ?.hide();
+
+
+            /*
+             * Reload branches
+             * for the same delivery card.
+             */
+            if (deliveryCard) {
+
+                const branchSelect =
+                    deliveryCard.querySelector(
+                        '.js-branch'
+                    );
+
+
+                if (branchSelect) {
+
+                    await loadBranches(
+                        bankId,
+                        branchSelect,
+                        deliveryCard
+                    );
+
+                }
+
+            }
+
+
+        } catch (error) {
+
+            console.error(
+                'Add branch error:',
+                error
+            );
+
+            addBranchError.textContent =
+                error.message ||
+                'Failed to add branch.';
+
+            addBranchError.classList.remove(
+                'd-none'
+            );
+
+        } finally {
+
+            btnSaveBranch.disabled = false;
+
+        }
+
+    }
+);
+
+
     /* =========================================================
        RENDER SAVED DELIVERIES
     ========================================================= */
